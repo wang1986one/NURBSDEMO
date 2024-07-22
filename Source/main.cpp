@@ -1,14 +1,17 @@
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
+#include "ImGuizmo.h"
 #include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include"mat_vec.h"
+#include "Ray.h"
 #include"spline.h"
 #pragma region  igl
 #include <readOFF.h>
 #include<readOBJ.h>
+#include <unproject_ray.h>
 #include <opengl/glfw/Viewer.h>
 static double highdpiw = 1; // High DPI width
 static double highdpih = 1; // High DPI height
@@ -104,6 +107,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     glfw_key_callback(window, key,  scancode,  action,  mods);
 }
 void mouseButton(GLFWwindow* window, int B, int S, int F) {
+    
     if (drawoption.view_control)
     glfw_mouse_press(window,  B,  S,  F);
 }
@@ -114,6 +118,64 @@ void mouseMove(GLFWwindow* window, double x, double y) {
 
 NURBS::Spline* spline;
 std::vector<NURBS::CP>pos_arr;
+
+int Intersection(const MathN::Ray& ray,const float radius ) {
+    float dis= std::numeric_limits<float>::infinity();
+    int index = -1;
+    for (int i = 0; i < pos_arr.size();i++) {
+        float tm=0.0f;
+        if (ray.HitDistance(pos_arr[i].pos, radius, tm)) {
+            if (tm < dis) {
+                index = i;
+                dis = tm;
+            }
+        }
+    }
+    return index;
+}
+bool Guizmo() {
+
+    auto mpos=ImGui::GetMousePos();
+    const Eigen::Vector2f pos(
+        mpos.x, viewer.core().viewport(3) - mpos.y);
+    const auto model = viewer.core().view;
+    const auto proj = viewer.core().proj;
+    const auto viewport = viewer.core().viewport;
+    Eigen::RowVector3d src;
+    Eigen::RowVector3d dir;
+    {
+        Eigen::Vector3f src_f, dir_f;
+        igl::unproject_ray(pos, model, proj, viewport, src_f, dir_f);
+        src = src_f.cast<double>().transpose();
+        dir = dir_f.cast<double>().transpose();
+    }
+    bool flag = false;
+    MathN::Ray ray(src,dir);
+    static int index = -1;
+    if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Right))
+        index = Intersection(ray, 0.1f);
+    if (index != -1) {
+        
+        float xform[16] = { 
+
+        };
+        float matrixRotation[3] = { 0,0,0 }, matrixScale[3] = {1,1,1};
+        ImGuizmo::RecomposeMatrixFromComponents(pos_arr[index].pos.data(), matrixRotation, matrixScale,xform);
+        ImGuiIO& io = ImGui::GetIO();
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+        ImGuizmo::BeginFrame();
+        ImGui::PopStyleVar();
+        ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+        ImGuizmo::SetOrthographic(false);
+
+        if (ImGuizmo::Manipulate(model.data(), proj.data(), ImGuizmo::TRANSLATE, ImGuizmo::LOCAL, xform, NULL, NULL)) {
+            flag = true;
+        }
+        ImGuizmo::DecomposeMatrixToComponents(xform, pos_arr[index].pos.data(), matrixRotation, matrixScale);
+    }       
+    return flag;
+
+}
 int main()
 {
     glfwInit();
@@ -218,9 +280,9 @@ int main()
 
     updatevis();
     // Load a mesh in OFF format
-    igl::readOFF("D:\\Project\\pmp\\pmp-data\\off\\elephant.off", V, F);
-    viewer.append_mesh();
-    viewer.data(1).set_mesh(V, F);
+    //igl::readOFF("D:\\Project\\pmp\\pmp-data\\off\\elephant.off", V, F);
+   // viewer.append_mesh();
+   // viewer.data(1).set_mesh(V, F);
     //viewer.core().align_camera_center(V, F);
     viewer.init();
     viewer.window = window;
@@ -235,6 +297,7 @@ int main()
         bool flag = false;
         flag |= ImGui::SliderInt("Segments", &drawoption.segments, 5, 150);
         flag |= ImGui::SliderInt("K", &drawoption.k, 1, 10);
+        flag |= Guizmo();
 
         for (int i = 0; i < pos_arr.size();i++) {
             std::string temp_name = "weight " + std::to_string(i)+":";
@@ -246,6 +309,7 @@ int main()
 
         if(flag)
            updatevis();
+       
         viewer.draw();
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

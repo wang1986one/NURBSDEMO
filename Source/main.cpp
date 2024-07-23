@@ -309,7 +309,7 @@ int main()
             delete surface;
             surface = nullptr;
         }
-        surface = new NURBS::Surface(surface_pos_arr,3,5,5,NURBS::Loop, NURBS::Loop);
+        surface = new NURBS::Surface(surface_pos_arr,3,5,5,NURBS::Standrad, NURBS::Standrad);
         Eigen::MatrixXd TV;
         int divisionx = 20, divisiony = 20;
         TV.resize((divisionx+1)*(divisiony+1), 3);

@@ -8,6 +8,7 @@
 #include"mat_vec.h"
 #include "Ray.h"
 #include"spline.h"
+#include"surface.h"
 #pragma region  igl
 #include <readOFF.h>
 #include<readOBJ.h>
@@ -116,9 +117,10 @@ void mouseMove(GLFWwindow* window, double x, double y) {
     glfw_mouse_move(window,  x,  y);
 }
 
-NURBS::Spline* spline;
+NURBS::Spline* spline=nullptr;
 std::vector<NURBS::CP>pos_arr;
-
+NURBS::Surface* surface=nullptr;
+std::vector<NURBS::CP>surface_pos_arr;
 int Intersection(const MathN::Ray& ray,const float radius ) {
     float dis= std::numeric_limits<float>::infinity();
     int index = -1;
@@ -216,6 +218,31 @@ int main()
     ImGui_ImplOpenGL3_Init(glsl_version);
     glEnable(GL_DEPTH_TEST);
     pos_arr = { {0,0,0},{1,0,0},{1,1,1},{2,1,1},{2,0,0},{3,0,0},{3,1,1} };
+    /*
+    
+    surface_pos_arr = {
+        {4.60128021,0,-1.26708055},{5.50103045,2.58807635,2.07579565},{-1.50000024,2.58807611,-8.77062988},
+        {-3,-2.62268316e-07,0},{-1.49999976,-2.59807634,0},{1.50000107,-2.59807563,0},
+        {5.94173336,-0.696736932,-4.70421982},{1.24999988,2.16506362,0.866025448},{-1.25000012,1.18786144,0.86559689},
+        {-2.5,-2.18556949e-07,0.238941669},{-1.24999976,-2.16506362,0.866025448},{1.39073896,-2.1650629,-2.00983953},
+        {-2.17055154,-0.683442593,12.9277067},{0.74999994,1.29903817,0.866025388},{-0.750000119,1.29903805,0.866025388},
+        {2.94000006,-1.31134158e-07,4.98983479},{-0.749999881,-1.29903817,0.866025388},{0.750000536,-1.29903781,0.866025388},
+        {1,0,-8.74227766e-08},{0.49999997,0.866025448,-8.74227766e-08},{-0.50000006,0.866025388,-8.74227766e-08},
+        {-1,-8.74227766e-08,-8.74227766e-08},{-0.499999911,-0.866025448,-8.74227766e-08},{0.500000358,-0.866025209,-8.74227766e-08},
+        {1.50000012,0,-0.866025448},{4.11833334,1.2890383,0.0910527706},{-0.750000179,1.29903817,-0.866025448},
+        {-1.50000012,-1.31134172e-07,-0.866025448},{-0.74999994,-1.29903829,-0.866025448},{0.750000596,-1.29903793,-0.866025448},
+        {3.6006763,1.17056704,-5.11826801},{1.25000012,2.1650641,-0.866025209},{-1.25000036,2.16506386,-0.866025209},
+        {-2.64777708,-2.18556977e-07,-2.43669486},{-1.25,-2.1650641,-0.866025209},{6.89189672,-2.16506338,-15.1219845}
+    };    
+    */
+    surface_pos_arr = {
+    {-2,0,-2},{-1,0,-2},{0,0,-2},{1,0,-2},{2,0,-2},
+    {-2,0,-1},{-1,0,-1},{-0,0,-1},{1,0,-1},{2,0,-1},
+    {-2,0,0},{-1,0,0},{-0,0,0},{1,0,0},{2,0,0},
+    {-2,0,1},{-1,0,1},{-0,0,1},{1,0,1},{2,0,1},
+    {-2,0,2},{-1,0,2},{-0,0,2},{1,0,2},{2,0,2},
+    };
+
     auto GetSplineCurve = [&]() {
         Eigen::MatrixXd ans;
         ans.resize(drawoption.segments - 1,3);
@@ -236,14 +263,12 @@ int main()
         return ans;
     };
 
-    auto updatevis = [&]() {
+    auto update_curve = [&]() {
         if (spline) {
             delete spline;
             spline = nullptr;
         }
-       
         spline = new NURBS::Spline(pos_arr, drawoption.k, NURBS::Standrad);
-
         Eigen::MatrixXd TV;
         Eigen::MatrixXi TE;
         Eigen::MatrixXd TC;
@@ -277,12 +302,56 @@ int main()
         
         viewer.data(0).line_width = 2;
         };
+    update_curve();
 
-    updatevis();
+    auto update_surface = [&]() {
+        if (surface) {
+            delete surface;
+            surface = nullptr;
+        }
+        surface = new NURBS::Surface(surface_pos_arr,3,5,5,NURBS::Loop, NURBS::Loop);
+        Eigen::MatrixXd TV;
+        int divisionx = 20, divisiony = 20;
+        TV.resize((divisionx+1)*(divisiony+1), 3);
+        std::vector<int>idcs;
+        int lx = divisionx + 1;
+        int ly = divisiony + 1;
+        float dx = 1.0f /divisionx;
+        float dy = 1.0f /divisiony;
+        for (int iy = 0; iy < ly; iy++)
+            for (int ix = 0; ix < lx; ix++) {
+                int i = ix + iy * lx;
+                float x = std::min(ix * dx, 1.0f - 1e-5f);
+                float y = std::min(iy * dy, 1.0f - 1e-5f);
+                MathN::vec3 v(0, 0, 0);
+                bool f = surface->GetCurve(x, y,  v);
+                if (!f) std::cout << "surface range is somehow wrong" << std::endl;;
+                TV.row(i) << v[0],v[1],v[2];
+                if(iy < divisiony && ix<divisionx) {
+                    idcs.push_back(i);
+                    idcs.push_back(i + 1);
+                    idcs.push_back(i + lx);
+                    idcs.push_back(i + lx);
+                    idcs.push_back(i + 1);
+                    idcs.push_back(i + lx + 1);
+                }
+            }
+        Eigen::MatrixXi TF;
+        TF.resize(idcs.size()/3,3);
+        for (int i = 0; i < idcs.size() / 3; i++) {
+            TF.row(i) << idcs[3 * i], idcs[3 * i + 1], idcs[3 * i + 2];
+        }
+
+        viewer.data(1).set_mesh(TV, TF);
+        viewer.core().align_camera_center(TV, TF);
+
+    };
+    
     // Load a mesh in OFF format
     //igl::readOFF("D:\\Project\\pmp\\pmp-data\\off\\elephant.off", V, F);
-   // viewer.append_mesh();
-   // viewer.data(1).set_mesh(V, F);
+    viewer.append_mesh();
+    update_surface();
+    //viewer.data(1).set_mesh(V, F);
     //viewer.core().align_camera_center(V, F);
     viewer.init();
     viewer.window = window;
@@ -298,7 +367,6 @@ int main()
         flag |= ImGui::SliderInt("Segments", &drawoption.segments, 5, 150);
         flag |= ImGui::SliderInt("K", &drawoption.k, 1, 10);
         flag |= Guizmo();
-
         for (int i = 0; i < pos_arr.size();i++) {
             std::string temp_name = "weight " + std::to_string(i)+":";
             flag|=ImGui::SliderFloat(temp_name.c_str(),&pos_arr[i].w,1.0f,50.0f);
@@ -306,10 +374,8 @@ int main()
         if (ImGui::IsKeyReleased(ImGuiKey_::ImGuiKey_Space)) {
             drawoption.view_control = !drawoption.view_control;
         }
-
         if(flag)
-           updatevis();
-       
+            update_curve();
         viewer.draw();
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

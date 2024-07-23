@@ -92,8 +92,10 @@ static void glfw_drop_callback(GLFWwindow* /*window*/, int /*count*/, const char
 #define SCR_WIDTH 800
 #define SCR_HEIGHT 600
 struct DrawOptions {
-    int segments = 150;
-    int k = 3;
+    int curve_segments = 150;
+    int curve_k = 3;
+    int surface_segments = 40;
+    int surface_k = 3;
     bool view_control = true;
 }drawoption;
 void g_mainWindow(GLFWwindow* window, int w, int h) {
@@ -121,12 +123,12 @@ NURBS::Spline* spline=nullptr;
 std::vector<NURBS::CP>pos_arr;
 NURBS::Surface* surface=nullptr;
 std::vector<NURBS::CP>surface_pos_arr;
-int Intersection(const MathN::Ray& ray,const float radius ) {
+int Intersection(const MathN::Ray& ray,const float radius , const std::vector<NURBS::CP>&arr) {
     float dis= std::numeric_limits<float>::infinity();
     int index = -1;
-    for (int i = 0; i < pos_arr.size();i++) {
+    for (int i = 0; i < arr.size();i++) {
         float tm=0.0f;
-        if (ray.HitDistance(pos_arr[i].pos, radius, tm)) {
+        if (ray.HitDistance(arr[i].pos, radius, tm)) {
             if (tm < dis) {
                 index = i;
                 dis = tm;
@@ -135,7 +137,7 @@ int Intersection(const MathN::Ray& ray,const float radius ) {
     }
     return index;
 }
-bool Guizmo() {
+void Guizmo(bool &flag1,bool& flag2) {
 
     auto mpos=ImGui::GetMousePos();
     const Eigen::Vector2f pos(
@@ -153,16 +155,18 @@ bool Guizmo() {
     }
     bool flag = false;
     MathN::Ray ray(src,dir);
-    static int index = -1;
-    if(ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Right))
-        index = Intersection(ray, 0.1f);
-    if (index != -1) {
-        
-        float xform[16] = { 
+    static int index_curve = -1;
+    static int index_surface = -1;
+    if (ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Right)) {
+        index_curve = Intersection(ray, 0.1f,pos_arr);
+        index_surface = Intersection(ray, 0.1f, surface_pos_arr);
+    }
 
+    if (index_curve != -1) {
+        float xform[16] = { 
         };
         float matrixRotation[3] = { 0,0,0 }, matrixScale[3] = {1,1,1};
-        ImGuizmo::RecomposeMatrixFromComponents(pos_arr[index].pos.data(), matrixRotation, matrixScale,xform);
+        ImGuizmo::RecomposeMatrixFromComponents(pos_arr[index_curve].pos.data(), matrixRotation, matrixScale,xform);
         ImGuiIO& io = ImGui::GetIO();
         ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
         ImGuizmo::BeginFrame();
@@ -171,12 +175,27 @@ bool Guizmo() {
         ImGuizmo::SetOrthographic(false);
 
         if (ImGuizmo::Manipulate(model.data(), proj.data(), ImGuizmo::TRANSLATE, ImGuizmo::LOCAL, xform, NULL, NULL)) {
-            flag = true;
+            flag1 = true;
         }
-        ImGuizmo::DecomposeMatrixToComponents(xform, pos_arr[index].pos.data(), matrixRotation, matrixScale);
-    }       
-    return flag;
-
+        ImGuizmo::DecomposeMatrixToComponents(xform, pos_arr[index_curve].pos.data(), matrixRotation, matrixScale);
+    } 
+    else if(index_surface!=-1)
+    {
+        float xform[16] = {
+        };
+        float matrixRotation[3] = { 0,0,0 }, matrixScale[3] = { 1,1,1 };
+        ImGuizmo::RecomposeMatrixFromComponents(surface_pos_arr[index_surface].pos.data(), matrixRotation, matrixScale, xform);
+        ImGuiIO& io = ImGui::GetIO();
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+        ImGuizmo::BeginFrame();
+        ImGui::PopStyleVar();
+        ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+        ImGuizmo::SetOrthographic(false);
+        if (ImGuizmo::Manipulate(model.data(), proj.data(), ImGuizmo::TRANSLATE, ImGuizmo::LOCAL, xform, NULL, NULL)) {
+            flag2 = true;
+        }
+        ImGuizmo::DecomposeMatrixToComponents(xform, surface_pos_arr[index_surface].pos.data(), matrixRotation, matrixScale);
+    }
 }
 int main()
 {
@@ -218,23 +237,7 @@ int main()
     ImGui_ImplOpenGL3_Init(glsl_version);
     glEnable(GL_DEPTH_TEST);
     pos_arr = { {0,0,0},{1,0,0},{1,1,1},{2,1,1},{2,0,0},{3,0,0},{3,1,1} };
-    /*
-    
-    surface_pos_arr = {
-        {4.60128021,0,-1.26708055},{5.50103045,2.58807635,2.07579565},{-1.50000024,2.58807611,-8.77062988},
-        {-3,-2.62268316e-07,0},{-1.49999976,-2.59807634,0},{1.50000107,-2.59807563,0},
-        {5.94173336,-0.696736932,-4.70421982},{1.24999988,2.16506362,0.866025448},{-1.25000012,1.18786144,0.86559689},
-        {-2.5,-2.18556949e-07,0.238941669},{-1.24999976,-2.16506362,0.866025448},{1.39073896,-2.1650629,-2.00983953},
-        {-2.17055154,-0.683442593,12.9277067},{0.74999994,1.29903817,0.866025388},{-0.750000119,1.29903805,0.866025388},
-        {2.94000006,-1.31134158e-07,4.98983479},{-0.749999881,-1.29903817,0.866025388},{0.750000536,-1.29903781,0.866025388},
-        {1,0,-8.74227766e-08},{0.49999997,0.866025448,-8.74227766e-08},{-0.50000006,0.866025388,-8.74227766e-08},
-        {-1,-8.74227766e-08,-8.74227766e-08},{-0.499999911,-0.866025448,-8.74227766e-08},{0.500000358,-0.866025209,-8.74227766e-08},
-        {1.50000012,0,-0.866025448},{4.11833334,1.2890383,0.0910527706},{-0.750000179,1.29903817,-0.866025448},
-        {-1.50000012,-1.31134172e-07,-0.866025448},{-0.74999994,-1.29903829,-0.866025448},{0.750000596,-1.29903793,-0.866025448},
-        {3.6006763,1.17056704,-5.11826801},{1.25000012,2.1650641,-0.866025209},{-1.25000036,2.16506386,-0.866025209},
-        {-2.64777708,-2.18556977e-07,-2.43669486},{-1.25,-2.1650641,-0.866025209},{6.89189672,-2.16506338,-15.1219845}
-    };    
-    */
+
     surface_pos_arr = {
     {-2,0,-2},{-1,0,-2},{0,0,-2},{1,0,-2},{2,0,-2},
     {-2,0,-1},{-1,0,-1},{-0,0,-1},{1,0,-1},{2,0,-1},
@@ -245,10 +248,10 @@ int main()
 
     auto GetSplineCurve = [&]() {
         Eigen::MatrixXd ans;
-        ans.resize(drawoption.segments - 1,3);
-        float seg = 1.0f / drawoption.segments;
+        ans.resize(drawoption.curve_segments - 1,3);
+        float seg = 1.0f / drawoption.curve_segments;
         float u = seg;
-        for (int i = 0; i < drawoption.segments-1; i++) {
+        for (int i = 0; i < drawoption.curve_segments-1; i++) {
             MathN::vec3 v;
             if (spline->GetCurve(u, v)) {
                 u += seg;
@@ -268,7 +271,7 @@ int main()
             delete spline;
             spline = nullptr;
         }
-        spline = new NURBS::Spline(pos_arr, drawoption.k, NURBS::Standrad);
+        spline = new NURBS::Spline(pos_arr, drawoption.curve_k, NURBS::Standrad);
         Eigen::MatrixXd TV;
         Eigen::MatrixXi TE;
         Eigen::MatrixXd TC;
@@ -284,7 +287,7 @@ int main()
             }
                 
         }
-
+        viewer.data(0).clear();
         viewer.data(0).set_points(TV, Eigen::RowVector3d(1, 1, 0));
         viewer.data(0).point_size = 15;
         int lastedx = TE.rows();
@@ -298,6 +301,7 @@ int main()
             TE.row(lastedx + i) << i + lastvdx, i + lastvdx + 1;
             TC.row(lastedx + i) << 0,1,1;
         }
+        
         viewer.data(0).set_edges(TV, TE,TC);
         
         viewer.data(0).line_width = 2;
@@ -309,10 +313,10 @@ int main()
             delete surface;
             surface = nullptr;
         }
-        surface = new NURBS::Surface(surface_pos_arr,3,5,5,NURBS::Standrad, NURBS::Standrad);
-        Eigen::MatrixXd TV;
-        int divisionx = 20, divisiony = 20;
-        TV.resize((divisionx+1)*(divisiony+1), 3);
+        surface = new NURBS::Surface(surface_pos_arr,drawoption.surface_k,5,5,NURBS::Standrad, NURBS::Standrad);
+        Eigen::MatrixXd SV;
+        int divisionx = drawoption.surface_segments, divisiony = drawoption.surface_segments;
+        SV.resize((divisionx+1)*(divisiony+1), 3);
         std::vector<int>idcs;
         int lx = divisionx + 1;
         int ly = divisiony + 1;
@@ -321,29 +325,43 @@ int main()
         for (int iy = 0; iy < ly; iy++)
             for (int ix = 0; ix < lx; ix++) {
                 int i = ix + iy * lx;
-                float x = std::min(ix * dx, 1.0f - 1e-5f);
-                float y = std::min(iy * dy, 1.0f - 1e-5f);
+                float x = std::min((ix) * dx, 1.0f - 1e-5f);
+                float y = std::min((iy) * dy, 1.0f - 1e-5f);
                 MathN::vec3 v(0, 0, 0);
                 bool f = surface->GetCurve(x, y,  v);
                 if (!f) std::cout << "surface range is somehow wrong" << std::endl;;
-                TV.row(i) << v[0],v[1],v[2];
+               
+                SV.row(i) << v[0],v[1],v[2];
                 if(iy < divisiony && ix<divisionx) {
+                    idcs.push_back(i + lx);
+                    idcs.push_back(i + 1);
                     idcs.push_back(i);
-                    idcs.push_back(i + 1);
-                    idcs.push_back(i + lx);
-                    idcs.push_back(i + lx);
-                    idcs.push_back(i + 1);
                     idcs.push_back(i + lx + 1);
+                    idcs.push_back(i + 1);
+                    idcs.push_back(i + lx);
                 }
             }
-        Eigen::MatrixXi TF;
-        TF.resize(idcs.size()/3,3);
+        Eigen::MatrixXi SF;
+        SF.resize(idcs.size()/3,3);
         for (int i = 0; i < idcs.size() / 3; i++) {
-            TF.row(i) << idcs[3 * i], idcs[3 * i + 1], idcs[3 * i + 2];
+            SF.row(i) << idcs[3 * i], idcs[3 * i + 1], idcs[3 * i + 2];
+        }
+        viewer.data(1).clear();
+        viewer.data(1).set_mesh(SV, SF);
+
+        Eigen::MatrixXd TV;
+ 
+        TV.resize(surface_pos_arr.size(), 3);
+ 
+        for (int i = 0; i < surface_pos_arr.size(); i++) {
+            float* p = surface_pos_arr[i].pos.data();
+            TV.row(i) << p[0], p[1], p[2];
+
+
         }
 
-        viewer.data(1).set_mesh(TV, TF);
-        viewer.core().align_camera_center(TV, TF);
+        viewer.data(1).set_points(TV, Eigen::RowVector3d(1, 0.2, 0.2));
+        viewer.data(1).point_size = 15;
 
     };
     
@@ -363,19 +381,28 @@ int main()
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        bool flag = false;
-        flag |= ImGui::SliderInt("Segments", &drawoption.segments, 5, 150);
-        flag |= ImGui::SliderInt("K", &drawoption.k, 1, 10);
-        flag |= Guizmo();
+        bool flag1 = false;
+        bool flag2 = false;
+        flag1 |= ImGui::SliderInt("Curve_Segments", &drawoption.curve_segments, 5, 150);
+        flag1 |= ImGui::SliderInt("Curve_K", &drawoption.curve_k, 1, 10);
+        flag2 |= ImGui::SliderInt("Surface_Segments", &drawoption.surface_segments, 5, 100);
+        flag2 |= ImGui::SliderInt("Surface_K", &drawoption.surface_k, 1, 5);
+        Guizmo(flag1,flag2);
         for (int i = 0; i < pos_arr.size();i++) {
-            std::string temp_name = "weight " + std::to_string(i)+":";
-            flag|=ImGui::SliderFloat(temp_name.c_str(),&pos_arr[i].w,1.0f,50.0f);
+            std::string temp_name = "curve_weight " + std::to_string(i)+":";
+            flag1|=ImGui::SliderFloat(temp_name.c_str(),&pos_arr[i].w,1.0f,50.0f);
+        }
+        for (int i = 0; i < surface_pos_arr.size(); i++) {
+            std::string temp_name = "surface_weight " + std::to_string(i) + ":";
+            flag2 |= ImGui::SliderFloat(temp_name.c_str(), &surface_pos_arr[i].w, 1.0f, 250.0f);
         }
         if (ImGui::IsKeyReleased(ImGuiKey_::ImGuiKey_Space)) {
             drawoption.view_control = !drawoption.view_control;
         }
-        if(flag)
+        if(flag1)
             update_curve();
+        if (flag2)
+            update_surface();
         viewer.draw();
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

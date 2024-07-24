@@ -289,7 +289,7 @@ int main()
         }
         viewer.data(0).clear();
         viewer.data(0).set_points(TV, Eigen::RowVector3d(1, 1, 0));
-        viewer.data(0).point_size = 15;
+        viewer.data(0).point_size = 10;
         int lastedx = TE.rows();
         int lastvdx = TV.rows();
         auto curve = GetSplineCurve();
@@ -361,7 +361,7 @@ int main()
         }
 
         viewer.data(1).set_points(TV, Eigen::RowVector3d(1, 0.2, 0.2));
-        viewer.data(1).point_size = 15;
+        viewer.data(1).point_size = 10;
 
     };
     

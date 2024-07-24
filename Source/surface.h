@@ -38,11 +38,9 @@ namespace NURBS {
         bool yloop;
         KnotType xknotType;
         KnotType yknotType;
-
         float shiftx(float t) { return min[0] + (max[0] - min[0]) * t; }
         float shifty(float t) { return min[1] + (max[1] - min[1]) * t; }
         int idx(int x, int y) { return x + y * this->lx; }
-
     public:
         Surface(std::vector<CP> cps, int order, int lx, int ly, SplineType xtype, SplineType ytype) {
             this->order = order;
@@ -61,7 +59,6 @@ namespace NURBS {
                 for (int i = 0; i < lx; i++) cps[i].pos = center1;
                 for (int i = 0; i < lx; i++) cps[i + (ly - 1) * lx].pos = center2;
             }
-
             if (xloop && yloop) {
                 std::vector<CP> xlooped = GenXLoop(cps, lx, ly);
                 std::vector<CP> ylooped = GenYLoop(xlooped, lx, ly);
@@ -76,9 +73,7 @@ namespace NURBS {
             else { SetData(cps, lx, ly); }
             min = MathN::vec2( KnotVector(order, order, lx, xknotType) ,KnotVector(order, order, ly, yknotType) );
             max = MathN::vec2(KnotVector(lx, order, lx, xknotType), KnotVector(ly, order, ly, yknotType));
-
         }
-
         bool GetCurve(float normTx, float normTy, MathN::vec3& v) {
             float tx = shiftx(normTx);
             float ty = shifty(normTy);
@@ -97,7 +92,6 @@ namespace NURBS {
             if (fy) cps[idx(i[0], ly - order + i[1])] = cp;
             if (fx && fy) cps[idx(lx - order + i[0], ly - order + i[1])] = cp;
         }
-
         std::vector<CP> GenXLoop(std::vector<CP> cps, int lx, int ly) {
             std::vector<CP> arr;
             arr.resize((lx + order) * ly);
@@ -109,7 +103,6 @@ namespace NURBS {
                 }
             return arr;
         }
-
         std::vector<CP> GenYLoop(std::vector<CP> cps, int lx, int ly) {
             std::vector<CP> lst = cps;
             for (int i = 0; i < order; i++) {
@@ -127,10 +120,4 @@ namespace NURBS {
             this->cps = cps;
         }
     };
-
-
-
-
-
-
 }

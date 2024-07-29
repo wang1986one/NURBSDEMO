@@ -81,6 +81,8 @@ if(NOT TARGET igl)
     target_compile_options(igl PRIVATE /bigobj )
 endif()
 
+add_subdirectory(filament)
+
 
 
 

@@ -1,8 +1,14 @@
 # Prerequisites
 *.d
 Build/*
+<<<<<<< Updated upstream
 out/*
 .vs/*
+=======
+.vs/*
+out/*
+
+>>>>>>> Stashed changes
 # Compiled Object files
 *.slo
 *.lo

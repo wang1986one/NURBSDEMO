@@ -1,7 +1,8 @@
 # Prerequisites
 *.d
 Build/*
-
+out/*
+.vs/*
 # Compiled Object files
 *.slo
 *.lo

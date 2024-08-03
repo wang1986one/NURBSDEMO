@@ -626,6 +626,7 @@ if (FILAMENT_BUILD_FILAMAT OR IS_HOST_PLATFORM)
     # spirv-tools must come before filamat, as filamat relies on the presence of the
     # spirv-tools_SOURCE_DIR variable.
     add_subdirectory(${EXTERNAL}/spirv-tools)
+    add_subdirectory(${EXTERNAL}/libsdl2/tnt)
     add_subdirectory(${EXTERNAL}/glslang/tnt)
     add_subdirectory(${EXTERNAL}/spirv-cross/tnt)
     add_subdirectory(${LIBRARIES}/filamat)

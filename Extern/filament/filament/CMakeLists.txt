@@ -272,7 +272,10 @@ list(APPEND SRCS ${RESGEN_SOURCE})
 # Configuration
 # ==================================================================================================
 
-
+# whether we're building for mobile -- this can affect some default quality settings
+if (IS_MOBILE_TARGET)
+    add_definitions(-DFILAMENT_TARGET_MOBILE=1)
+endif()
 
 # Size of the DFG lookup table
 if (NOT DFG_LUT_SIZE)
@@ -614,7 +617,6 @@ install(TARGETS ${TARGET} ${INSTALL_TYPE} DESTINATION lib/${DIST_DIR})
 install(DIRECTORY ${PUBLIC_HDR_DIR}/filament DESTINATION include)
 install(FILES "README.md" DESTINATION .)
 install(FILES "../LICENSE" DESTINATION .)
-
 # ==================================================================================================
 # Sub-projects
 # ==================================================================================================

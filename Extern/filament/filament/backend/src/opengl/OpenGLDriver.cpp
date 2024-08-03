@@ -2846,8 +2846,8 @@ void OpenGLDriver::beginRenderPass(Handle<HwRenderTarget> rth,
 
     // If we're rendering into the default render target (i.e. into the current SwapChain),
     // get the value of the output colorspace from there, otherwise it's always linear.
-    //assert_invariant(!rt->gl.isDefault || mCurrentDrawSwapChain);
-    mRec709OutputColorspace =  false;
+    assert_invariant(!rt->gl.isDefault || mCurrentDrawSwapChain);
+    mRec709OutputColorspace = rt->gl.isDefault ? mCurrentDrawSwapChain->rec709 : false;
 
     const TargetBufferFlags clearFlags = params.flags.clear & rt->targets;
     TargetBufferFlags discardFlags = params.flags.discardStart & rt->targets;
@@ -2935,8 +2935,8 @@ void OpenGLDriver::endRenderPass(int) {
     }
 
     if (rt->gl.isDefault) {
-        //assert_invariant(mCurrentDrawSwapChain);
-        //discardFlags &= ~TargetBufferFlags::NONE;// mPlatform.getPreservedFlags(mCurrentDrawSwapChain->swapChain);
+        assert_invariant(mCurrentDrawSwapChain);
+        discardFlags &= ~mPlatform.getPreservedFlags(mCurrentDrawSwapChain->swapChain);
     }
 
     if (gl.ext.EXT_discard_framebuffer) {

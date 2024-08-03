@@ -31,6 +31,7 @@
 
 #include <filament/Renderer.h>
 #include <filament/Viewport.h>
+#include<ResourceAllocator.h>
 
 #include <backend/DriverEnums.h>
 #include <backend/Handle.h>
@@ -51,7 +52,6 @@
 
 #include <stddef.h>
 #include <stdint.h>
-#include<ResourceAllocator.h>
 
 namespace filament {
 

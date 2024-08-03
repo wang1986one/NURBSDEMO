@@ -276,7 +276,7 @@ void FRenderer::skipFrame(uint64_t vsyncSteadyClockTimeNano) {
 }
 
 bool FRenderer::beginFrame(FSwapChain* swapChain, uint64_t vsyncSteadyClockTimeNano) {
-   // assert_invariant(swapChain);
+    assert_invariant(swapChain);
 
     SYSTRACE_CALL();
 
@@ -330,7 +330,7 @@ bool FRenderer::beginFrame(FSwapChain* swapChain, uint64_t vsyncSteadyClockTimeN
     mBeginFrameInternal = {};
 
     mSwapChain = swapChain;
-    //swapChain->makeCurrent(driver);
+    swapChain->makeCurrent(driver);
 
     // NOTE: this makes synchronous calls to the driver
     driver.updateStreams(&driver);
@@ -400,7 +400,7 @@ void FRenderer::endFrame() {
     }
 
     if (mSwapChain) {
-        //mSwapChain->commit(driver);
+        mSwapChain->commit(driver);
         mSwapChain = nullptr;
     }
 
@@ -419,7 +419,7 @@ void FRenderer::endFrame() {
     }
 
     // do this before engine.flush()
-    mResourceAllocator->gc();
+    // mResourceAllocator->gc();
 
     // Run the component managers' GC in parallel
     // WARNING: while doing this we can't access any component manager
@@ -534,7 +534,7 @@ void FRenderer::renderStandaloneView(FView const* view) {
 void FRenderer::render(FView const* view) {
     SYSTRACE_CALL();
 
-    //assert_invariant(mSwapChain);
+    assert_invariant(mSwapChain);
 
     if (UTILS_UNLIKELY(mBeginFrameInternal)) {
         // this should not happen, the user should not call render() if we returned false from
@@ -637,7 +637,7 @@ void FRenderer::renderJob(RootArenaScope& rootArenaScope, FView& view) {
     const bool blendModeTranslucent = view.getBlendMode() == BlendMode::TRANSLUCENT;
     // If the swap-chain is transparent or if we blend into it, we need to allocate our intermediate
     // buffers with an alpha channel.
-    const bool needsAlphaChannel = true;
+    const bool needsAlphaChannel =
             (mSwapChain && mSwapChain->isTransparent()) || blendModeTranslucent;
 
     const bool isProtectedContent =  mSwapChain && mSwapChain->isProtected();

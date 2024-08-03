@@ -80,7 +80,6 @@ if(NOT TARGET igl)
     set_target_properties(igl PROPERTIES FOLDER ${lib_folder}/igl)
     target_compile_options(igl PRIVATE /bigobj )
 endif()
-
 add_subdirectory(filament)
 
 

@@ -18,6 +18,9 @@ set(RESOURCE_BINS)
 
 set(MATERIAL_SRCS
         materials/aiDefaultMat.mat
+        materials/aiDefaultTrans.mat
+        materials/depthVisualizer.mat
+        materials/transparentColor.mat
         materials/bakedColor.mat
         materials/bakedTexture.mat
         materials/pointSprites.mat

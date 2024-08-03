@@ -1,9 +1,10 @@
 material {
-    name : aiDefaultMat,
+    name : aiDefaultTrans,
     shadingModel : lit,
+    blending : transparent,
     parameters : [
         {
-            type : float3,
+            type : float4,
             name : baseColor
         },
         {
@@ -13,10 +14,6 @@ material {
         {
             type : float,
             name : roughness
-        },
-        {
-            type : float,
-            name : reflectance
         }
     ],
 }
@@ -24,9 +21,8 @@ material {
 fragment {
     void material(inout MaterialInputs material) {
         prepareMaterial(material);
-        material.baseColor.rgb = materialParams.baseColor;
+        material.baseColor = materialParams.baseColor;
         material.metallic = materialParams.metallic;
         material.roughness = materialParams.roughness;
-        material.reflectance = materialParams.reflectance;
     }
 }

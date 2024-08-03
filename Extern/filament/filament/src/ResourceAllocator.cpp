@@ -132,7 +132,7 @@ ResourceAllocator::ResourceAllocator(std::shared_ptr<ResourceAllocatorDisposer> 
 }
 
 ResourceAllocator::~ResourceAllocator() noexcept {
-   // assert_invariant(mTextureCache.empty());
+    assert_invariant(mTextureCache.empty());
 }
 
 void ResourceAllocator::terminate() noexcept {

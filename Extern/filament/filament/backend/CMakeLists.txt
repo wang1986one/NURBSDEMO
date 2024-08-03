@@ -120,6 +120,107 @@ if (FILAMENT_SUPPORTS_OPENGL AND NOT FILAMENT_USE_EXTERNAL_GLES3)
     endif()
 endif()
 
+# ==================================================================================================
+# Metal Sources
+# ==================================================================================================
+
+if (FILAMENT_SUPPORTS_METAL)
+    set(METAL_OBJC_SRCS
+            src/metal/MetalBlitter.mm
+            src/metal/MetalBuffer.mm
+            src/metal/MetalBufferPool.mm
+            src/metal/MetalContext.mm
+            src/metal/MetalDriver.mm
+            src/metal/MetalEnums.mm
+            src/metal/MetalExternalImage.mm
+            src/metal/MetalHandles.mm
+            src/metal/MetalPlatform.mm
+            src/metal/MetalShaderCompiler.mm
+            src/metal/MetalState.mm
+            src/metal/MetalTimerQuery.mm
+            src/metal/MetalUtils.mm
+    )
+
+    set(METAL_CPP_SRCS
+            src/metal/MetalResourceTracker.cpp
+    )
+
+    list(APPEND SRCS ${METAL_OBJC_SRCS} ${METAL_CPP_SRCS})
+
+    if (IOS)
+        # Objective-C++ sources need an additional compiler flag on iOS to disable exceptions.
+        set_property(SOURCE
+            ${METAL_OBJC_SRCS}
+                src/opengl/platforms/PlatformCocoaTouchGL.mm
+                src/opengl/platforms/CocoaTouchExternalImage.mm
+                src/opengl/platforms/PlatformCocoaGL.mm
+            PROPERTY COMPILE_FLAGS -fno-objc-exceptions)
+    endif()
+
+    option(FILAMENT_METAL_PROFILING "Enable profiling for the Metal backend" OFF)
+endif()
+
+# ==================================================================================================
+# Vulkan Sources
+# ==================================================================================================
+
+# See root CMakeLists.txt for platforms that support Vulkan
+if (FILAMENT_SUPPORTS_VULKAN)
+    list(APPEND SRCS
+            include/backend/platforms/VulkanPlatform.h
+            src/vulkan/caching/VulkanDescriptorSetManager.cpp
+            src/vulkan/caching/VulkanDescriptorSetManager.h
+            src/vulkan/caching/VulkanPipelineLayoutCache.cpp
+            src/vulkan/caching/VulkanPipelineLayoutCache.h
+            src/vulkan/platform/VulkanPlatform.cpp
+            src/vulkan/platform/VulkanPlatformSwapChainImpl.cpp
+            src/vulkan/platform/VulkanPlatformSwapChainImpl.h
+            src/vulkan/spirv/VulkanSpirvUtils.cpp
+            src/vulkan/spirv/VulkanSpirvUtils.h
+            src/vulkan/VulkanBlitter.cpp
+            src/vulkan/VulkanBlitter.h
+            src/vulkan/VulkanBuffer.cpp
+            src/vulkan/VulkanBuffer.h
+            src/vulkan/VulkanCommands.cpp
+            src/vulkan/VulkanCommands.h
+            src/vulkan/VulkanConstants.h
+            src/vulkan/VulkanContext.cpp
+            src/vulkan/VulkanContext.h
+            src/vulkan/VulkanDriver.cpp
+            src/vulkan/VulkanDriver.h
+            src/vulkan/VulkanDriverFactory.h
+            src/vulkan/VulkanFboCache.cpp
+            src/vulkan/VulkanFboCache.h
+            src/vulkan/VulkanHandles.cpp
+            src/vulkan/VulkanHandles.h
+            src/vulkan/VulkanImageUtility.cpp
+            src/vulkan/VulkanImageUtility.h
+            src/vulkan/VulkanMemory.h
+            src/vulkan/VulkanMemory.cpp
+            src/vulkan/VulkanPipelineCache.cpp
+            src/vulkan/VulkanPipelineCache.h
+            src/vulkan/VulkanSamplerCache.cpp
+            src/vulkan/VulkanSamplerCache.h
+            src/vulkan/VulkanStagePool.cpp
+            src/vulkan/VulkanStagePool.h
+            src/vulkan/VulkanSwapChain.cpp
+            src/vulkan/VulkanSwapChain.h
+            src/vulkan/VulkanReadPixels.cpp
+            src/vulkan/VulkanReadPixels.h
+            src/vulkan/VulkanResourceAllocator.h
+            src/vulkan/VulkanResources.cpp
+            src/vulkan/VulkanResources.h
+            src/vulkan/VulkanTexture.cpp
+            src/vulkan/VulkanTexture.h
+            src/vulkan/VulkanUtility.cpp
+            src/vulkan/VulkanUtility.h
+    )
+    if (ANDROID OR LINUX OR WIN32)
+        list(APPEND SRCS src/vulkan/platform/VulkanPlatformAndroidLinuxWindows.cpp)
+    elseif (APPLE OR IOS)
+        list(APPEND SRCS src/vulkan/platform/VulkanPlatformApple.mm)
+    endif()
+endif()
 
 # ==================================================================================================
 # Definitions
@@ -151,14 +252,25 @@ set_target_properties(${TARGET} PROPERTIES FOLDER Filament)
 add_library(${TARGET}_headers INTERFACE)
 target_include_directories(${TARGET}_headers INTERFACE ${PUBLIC_HDR_DIR})
 
+
+
 # ==================================================================================================
 # Dependencies
 # ==================================================================================================
 
-
+if (ANDROID)
+    if (FILAMENT_SUPPORTS_OPENGL)
+        target_link_libraries(${TARGET} PUBLIC GLESv3 EGL)
+    endif()
+    target_link_libraries(${TARGET} PUBLIC android)
+endif()
 
 if (FILAMENT_USE_SWIFTSHADER)
     target_link_libraries(${TARGET} PUBLIC ${SWIFTSHADER_VK})
+endif()
+
+if (APPLE AND NOT IOS)
+    target_link_libraries(${TARGET} PRIVATE "-framework Cocoa")
 endif()
 
 target_link_libraries(${TARGET} PUBLIC math)
@@ -167,6 +279,22 @@ target_link_libraries(${TARGET} PUBLIC utils)
 # Android, iOS, and WebGL do not use bluegl.
 if(FILAMENT_SUPPORTS_OPENGL AND NOT IOS AND NOT ANDROID AND NOT WEBGL)
     target_link_libraries(${TARGET} PRIVATE bluegl)
+endif()
+
+if (FILAMENT_SUPPORTS_VULKAN)
+    target_link_libraries(${TARGET} PUBLIC bluevk vkmemalloc vkshaders smol-v)
+    target_link_libraries(${TARGET} PRIVATE SPIRV-Headers)
+endif()
+
+if (FILAMENT_SUPPORTS_METAL)
+    target_link_libraries(${TARGET} PUBLIC "-framework Metal -framework CoreVideo")
+endif()
+
+if (LINUX)
+    target_link_libraries(${TARGET} PRIVATE dl)
+    if(FILAMENT_SUPPORTS_EGL_ON_LINUX)
+       target_link_libraries(${TARGET} PUBLIC EGL)
+    endif()
 endif()
 
 # ==================================================================================================
@@ -191,6 +319,9 @@ else()
     )
 endif()
 
+set(LINUX_LINKER_OPTIMIZATION_FLAGS
+        -Wl,--exclude-libs,bluegl
+)
 
 if (MSVC)
     set(FILAMENT_WARNINGS /W3)
@@ -205,7 +336,24 @@ else()
     )
 endif()
 
+if (APPLE)
+    # Turn on Automatic Reference Counting.
+    target_compile_options(${TARGET} PRIVATE "-fobjc-arc")
+endif()
 
+target_compile_options(${TARGET} PRIVATE
+        ${FILAMENT_WARNINGS}
+        $<$<CONFIG:Release>:${OPTIMIZATION_FLAGS}>
+        $<$<AND:$<PLATFORM_ID:Darwin>,$<CONFIG:Release>>:${DARWIN_OPTIMIZATION_FLAGS}>
+)
+
+if (FILAMENT_SUPPORTS_METAL)
+    target_compile_definitions(${TARGET} PRIVATE $<$<BOOL:${FILAMENT_METAL_PROFILING}>:FILAMENT_METAL_PROFILING>)
+endif()
+
+target_link_libraries(${TARGET} PRIVATE
+        $<$<AND:$<PLATFORM_ID:Linux>,$<CONFIG:Release>>:${LINUX_LINKER_OPTIMIZATION_FLAGS}>
+)
 
 
 

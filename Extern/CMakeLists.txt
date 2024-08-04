@@ -24,7 +24,25 @@ if(NOT TARGET imgui)
     "${imgui_SOURCE_DIR_}/backends/imgui_impl_opengl3.cpp" 
     "${imgui_SOURCE_DIR_}/backends/imgui_impl_opengl3.h"
     "${imgui_SOURCE_DIR_}/backends/imgui_impl_opengl3_loader.h")
-    add_library(imgui STATIC ${imgui_sources} ${imgui_impl})
+    set(_imgui_node_editor_Sources
+    ${imgui_SOURCE_DIR_}/crude_json.cpp
+    ${imgui_SOURCE_DIR_}/crude_json.h
+    ${imgui_SOURCE_DIR_}/imgui_bezier_math.h
+    ${imgui_SOURCE_DIR_}/imgui_bezier_math.inl
+    ${imgui_SOURCE_DIR_}/imgui_canvas.cpp
+    ${imgui_SOURCE_DIR_}/imgui_canvas.cpp
+    ${imgui_SOURCE_DIR_}/imgui_canvas.h
+    ${imgui_SOURCE_DIR_}/imgui_canvas.h
+    ${imgui_SOURCE_DIR_}/imgui_extra_math.h
+    ${imgui_SOURCE_DIR_}/imgui_extra_math.inl
+    ${imgui_SOURCE_DIR_}/imgui_node_editor_api.cpp
+    ${imgui_SOURCE_DIR_}/imgui_node_editor_internal.h
+    ${imgui_SOURCE_DIR_}/imgui_node_editor_internal.inl
+    ${imgui_SOURCE_DIR_}/imgui_node_editor.cpp
+    ${imgui_SOURCE_DIR_}/imgui_node_editor.h
+    ${imgui_SOURCE_DIR_}/imgui_node_editor.natvis
+)
+    add_library(imgui STATIC ${imgui_sources} ${imgui_impl} ${_imgui_node_editor_Sources})
     target_link_libraries(imgui PUBLIC glfw)
     target_include_directories(imgui PUBLIC $<BUILD_INTERFACE:${imgui_SOURCE_DIR_}>)
     set_target_properties(imgui PROPERTIES FOLDER ${lib_folder}/imgui)

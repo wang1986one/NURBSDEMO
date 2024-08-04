@@ -381,6 +381,7 @@ int main()
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
+    
         bool flag1 = false;
         bool flag2 = false;
         flag1 |= ImGui::SliderInt("Curve_Segments", &drawoption.curve_segments, 5, 150);

@@ -70,7 +70,9 @@ static void printUsage(char* name) {
     std::cout << usage;
 }
 
-#
+#ifdef main
+#  undef main
+#endif /* main */
 int main(int argc, char** argv) {
     App app{};
     app.config.title = "hellotriangle";

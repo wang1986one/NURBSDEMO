@@ -185,6 +185,8 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+
+    //load fonts
     ImGuiIO& io = ImGui::GetIO();
     IM_DELETE(io.Fonts);
     io.Fonts = IM_NEW(ImFontAtlas);
@@ -206,14 +208,8 @@ int main()
         static ImVector<LinkInfo>   m_Links;                // List of live links. It is dynamic unless you want to create read-only view over nodes.
         static int m_NextLinkId = 100;     // Counter to help generate link ids. In real application this will probably based on pointer to user data structure.
 
-        auto& io = ImGui::GetIO();
-
-        ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
-
-        ImGui::Separator();
-
         ed::SetCurrentEditor(m_Context_a);
-        ed::Begin("My Editor", ImVec2(0.0, 0.0f));
+        ed::Begin("My Editor A", ImVec2(0.0, 0.0f));
         int uniqueId = 1;
         // Start drawing nodes.
         ed::BeginNode(uniqueId++);
@@ -235,15 +231,10 @@ int main()
         static ImVector<LinkInfo>   m_Links;                // List of live links. It is dynamic unless you want to create read-only view over nodes.
         static int m_NextLinkId = 100;
         static bool firstframe = true; // Used to position the nodes on startup
-        auto& io = ImGui::GetIO();
-
-        // FPS Counter Ribbon
-        ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
-        ImGui::Separator();
 
         // Node Editor Widget
         ed::SetCurrentEditor(m_Context_b);
-        ed::Begin("My Editor", ImVec2(0.0, 0.0f));
+        ed::Begin("My Editor B", ImVec2(0.0, 0.0f));
         int uniqueId = 1;
 
 
@@ -266,12 +257,6 @@ int main()
         static int clicked = 0;
         if (ImGui::Button("Button"))
             clicked++;
-        if (clicked & 1)
-        {
-            ImGui::SameLine();
-            ImGui::Text("Thanks for clicking me!");
-        }
-
         // Checkbox
         static bool check = true;
         ImGui::Checkbox("checkbox", &check);
@@ -597,18 +582,12 @@ int main()
     auto ui_basicinteracton_call = [&]() {
         static ImVector<LinkInfo>   m_Links;                // List of live links. It is dynamic unless you want to create read-only view over nodes.
         static int m_NextLinkId = 100;     // Counter to help generate link ids. In real application this will probably based on pointer to user data structure.
-
         static bool m_FirstFrame = true;
-        auto& io = ImGui::GetIO();
-
-        ImGui::Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
-
-        ImGui::Separator();
 
         ed::SetCurrentEditor(m_Context_c);
 
         // Start interaction with editor.
-        ed::Begin("My Editor", ImVec2(0.0, 0.0f));
+        ed::Begin("My Editor C", ImVec2(0.0, 0.0f));
 
         int uniqueId = 1;
 

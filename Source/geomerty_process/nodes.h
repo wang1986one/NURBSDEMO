@@ -3,11 +3,16 @@
 #include <iostream>
 #include<vector>
 #include<string>
+#include<unordered_map>
 #include<type_traits>
 #include <imgui_node_editor.h>
 #include"surface_mesh.h"
+#include"read_mesh.h"
 namespace Geomerty {
 	static int uniqueId = 0;
+	int GetNextId() {
+		return uniqueId++;
+	}
 	struct NodeData {
 		NodeData() : m_type(0) {};
 		explicit NodeData(uint64_t type) : m_type(type) {}
@@ -121,6 +126,7 @@ namespace Geomerty {
 		std::any m_data;
 		uint64_t m_type;
 	};
+	std::unordered_map<size_t, NodeData>registry;
 	class GeomertyNodeBase;
 	class Node;
 	struct ExetContex {
@@ -128,27 +134,18 @@ namespace Geomerty {
 		std::vector<NodeData*> inputs;
 		std::vector<NodeData>& outputs;
 	};
-	class GeomertyNodeBase {
+	class NodeBase {
 	public:
-		GeomertyNodeBase() = default;
+		NodeBase() = default;
 		virtual void InstallUi() = 0;
 		virtual void Init() = 0;
 		virtual void Execute(ExetContex* ctx) = 0;
 	};
-	class GeomertyNode :public GeomertyNodeBase {
+	class GeomertyNode :public NodeBase {
 	public:
 		GeomertyNode() = default;
-		std::vector<NodeData>output_data;
 		void InstallUi()override {
-			ax::NodeEditor::BeginPin(uniqueId++, ax::NodeEditor::PinKind::Input);
-			ImGui::Text("-> In");
-			ax::NodeEditor::EndPin();
-			ImGui::SameLine();
-			ImGui::Dummy(ImVec2(250, 0)); // Hacky magic number to space out the output pin.
-			ImGui::SameLine();
-			ax::NodeEditor::BeginPin(uniqueId++, ax::NodeEditor::PinKind::Output);
-			ImGui::Text("Out ->");
-			ax::NodeEditor::EndPin();
+
 		}
 		void Init()override {
 
@@ -159,7 +156,7 @@ namespace Geomerty {
 		}
 
 	};
-	using PinType = uint8_t;
+	using PinType = size_t;
 	enum class PinKind
 	{
 		Output,
@@ -180,12 +177,14 @@ namespace Geomerty {
 		std::string Name;
 		PinType Type;
 		PinKind Kind;
-		Pin(int id, const char* name, PinType type) :
-			ID(id), Node(nullptr), Name(name), Type(type), Kind(PinKind::Input)
+		size_t index;
+		Pin(int id, const char* name, PinType type, PinKind k= PinKind::Input) :
+			ID(id), Node(nullptr), Name(name), Type(type), Kind(k),index(id)
 		{
 		}
+
 	};
-	struct Node
+	struct Node:public NodeBase
 	{
 		ax::NodeEditor::NodeId ID;
 		std::string Name;
@@ -196,12 +195,22 @@ namespace Geomerty {
 		ImVec2 Size;
 		std::string State;
 		std::string SavedState;
-		GeomertyNodeBase* Gnode = nullptr;
+		Node() = default;	
 		Node(int id, const char* name, ImColor color = ImColor(255, 255, 255)) :
 			ID(id), Name(name), Color(color), Type(NodeType::Blueprint), Size(0, 0)
 		{
 		}
-		void Exectue() {
+		void Exectue(ExetContex* ctx) {
+			
+		}
+		void InstallUi()override {
+
+		}
+		void Init()override {
+
+		}
+		void Execute(ExetContex* ctx)override {
+
 
 		}
 	};
@@ -223,34 +232,48 @@ namespace Geomerty {
 			return lhs.AsPointer() < rhs.AsPointer();
 		}
 	};
-	class StringNode :public GeomertyNode {
+	class StringNode :public Node {
 	public:
+		StringNode(int id, const char* name, ImColor color = ImColor(255, 255, 255)):Node(id, name, color ){}
 		void InstallUi() override {
 
 			ImGui::Text("Path");
 		}
 		void Init()override {
-			//outputs.push_back(std::make_shared<std::any>(str));
+			Outputs.emplace_back(GetNextId(), "str", typeid(std::string).hash_code(), PinKind::Output);
+			Outputs.back().Node = this;
+			registry[Outputs.back().index] = NodeData(std::string(""));
+
 		}
 		void Execute(ExetContex* ctx)override {
-
+			registry[Outputs.back().index] = NodeData(str);
 			//td::string path=std::any_cast<std::string>((*ctx->inputs)[0]);
 		}
-		StringNode() {
-		}
+
 		std::string str;
 	};
-	class Read_MeshNode :public GeomertyNode {
+	class Read_MeshNode :public Node {
+	public:
+		Read_MeshNode(int id, const char* name, ImColor color = ImColor(255, 255, 255)) :Node(id, name, color) {}
 		void InstallUi() override {
 
 
 		}
 		void Init() override {
+			Inputs.emplace_back(GetNextId(), "Path", typeid(std::string).hash_code(), PinKind::Input);
+			Inputs.back().Node = this;
+
+			Outputs.emplace_back(GetNextId(), "Mesh", typeid(SurfaceMesh).hash_code(), PinKind::Output);
+			Outputs.back().Node = this;
+			registry[Outputs.back().index] = NodeData(SurfaceMesh());
 
 		}
 		void Execute(ExetContex* ctx)override {
-
-			//td::string path=std::any_cast<std::string>((*ctx->inputs)[0]);
+			bool flag = false;
+			auto path=ctx->inputs[0]->get<std::string>(&flag);
+			SurfaceMesh mesh;
+			read_obj(mesh, path);
+			registry[Outputs.back().index] = NodeData(mesh);
 		}
 
 	};

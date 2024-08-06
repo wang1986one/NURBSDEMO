@@ -131,7 +131,7 @@ namespace Geomerty {
 	class GeomertyNodeBase {
 	public:
 		GeomertyNodeBase() = default;
-		virtual void InstallPins() = 0;
+		virtual void InstallUi() = 0;
 		virtual void Init() = 0;
 		virtual void Execute(ExetContex* ctx) = 0;
 	};
@@ -139,7 +139,7 @@ namespace Geomerty {
 	public:
 		GeomertyNode() = default;
 		std::vector<NodeData>output_data;
-		void InstallPins()override {
+		void InstallUi()override {
 			ax::NodeEditor::BeginPin(uniqueId++, ax::NodeEditor::PinKind::Input);
 			ImGui::Text("-> In");
 			ax::NodeEditor::EndPin();
@@ -225,14 +225,26 @@ namespace Geomerty {
 	};
 	class StringNode :public GeomertyNode {
 	public:
+		void InstallUi() override {
+
+			ImGui::Text("Path");
+		}
 		void Init()override {
 			//outputs.push_back(std::make_shared<std::any>(str));
+		}
+		void Execute(ExetContex* ctx)override {
+
+			//td::string path=std::any_cast<std::string>((*ctx->inputs)[0]);
 		}
 		StringNode() {
 		}
 		std::string str;
 	};
 	class Read_MeshNode :public GeomertyNode {
+		void InstallUi() override {
+
+
+		}
 		void Init() override {
 
 		}

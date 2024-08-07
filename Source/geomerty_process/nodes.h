@@ -9,7 +9,7 @@
 #include"surface_mesh.h"
 #include"read_mesh.h"
 namespace Geomerty {
-	static int uniqueId = 0;
+	static int uniqueId = 1;
 	int GetNextId() {
 		return uniqueId++;
 	}
@@ -235,15 +235,15 @@ namespace Geomerty {
 	class StringNode :public Node {
 	public:
 		StringNode(int id, const char* name, ImColor color = ImColor(255, 255, 255)):Node(id, name, color ){}
-		void InstallUi() override {
-
-			ImGui::Text("Path");
+		void InstallUi()override {
+			ImGui::InputText("Path",str.data(),256);
 		}
 		void Init()override {
 			Outputs.emplace_back(GetNextId(), "str", typeid(std::string).hash_code(), PinKind::Output);
 			Outputs.back().Node = this;
 			registry[Outputs.back().index] = NodeData(std::string(""));
 
+			str.reserve(256);
 		}
 		void Execute(ExetContex* ctx)override {
 			registry[Outputs.back().index] = NodeData(str);

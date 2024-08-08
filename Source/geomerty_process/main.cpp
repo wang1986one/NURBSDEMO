@@ -90,11 +90,8 @@ void mouseMove(GLFWwindow* window, double x, double y) {
 }
 static ed::EditorContext* m_Editor = nullptr;
 struct Example {
-	
-
 	std::vector<Geomerty::Node*>    m_Nodes;
 	std::vector<Geomerty::Link>    m_Links;
-
 	ed::LinkId GetNextLinkId()
 	{
 		return ed::LinkId(Geomerty::GetNextId());
@@ -142,7 +139,15 @@ struct Example {
 
 		return false;
 	}
-
+	Geomerty::Pin* FindConnectedStartPin(ed::PinId id) {
+		for (auto& link : m_Links) {
+			if (link.EndPinID == id)
+			{
+				return FindPin(link.StartPinID);
+			}
+		}
+		return nullptr;
+	}
 	bool CanCreateLink(Geomerty::Pin* a, Geomerty::Pin* b)
 	{
 		if (!a || !b || a == b || a->Kind == b->Kind || a->Type != b->Type || a->Node == b->Node)
@@ -505,9 +510,26 @@ struct Example {
 		ed::Resume();
 		ed::End();
 		ed::SetCurrentEditor(nullptr);
-		
-		
-		
+	}
+	void Execute() {
+		for (auto& n:m_Nodes) {
+			bool link_all = true;
+			std::vector<Geomerty::NodeData*>data_arr;
+			for (auto in_put : n->Inputs) {
+				if (!IsPinLinked(in_put.ID)) {
+					link_all = false;
+					break;
+				}
+				auto start_pin=FindConnectedStartPin(in_put.ID);
+				data_arr.push_back(Geomerty::GetPinData(start_pin->index));
+			}
+			if (link_all) {
+				Geomerty::ExetContex ctx{data_arr};
+				n->Execute(&ctx);
+			}
+
+		}
+
 	}
 };
 int main()
@@ -579,6 +601,13 @@ int main()
 		if (ImGui::Begin("widgets", nullptr, ImGuiWindowFlags_None)) {
 			ex.OnFrame(0.01f);
 		}
+		ImGui::End();
+		if (ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_None)) {
+			if (ImGui::Button("Execute")) {
+				ex.Execute();
+			}
+		}
+		
 		ImGui::End();
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

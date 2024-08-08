@@ -4,6 +4,7 @@
 #include<vector>
 #include<string>
 #include<unordered_map>
+#include<filesystem>
 #include<type_traits>
 #include <imgui_node_editor.h>
 #include"surface_mesh.h"
@@ -22,6 +23,7 @@ namespace Geomerty {
 
 		NodeData& operator=(const NodeData& other)
 		{
+			reset();
 			m_type = other.m_type;
 			m_data = other.m_data;
 			return *this;
@@ -29,6 +31,7 @@ namespace Geomerty {
 
 		NodeData& operator=(NodeData&& other) noexcept
 		{
+			
 			m_type = other.m_type;
 			m_data = std::move(other.m_data);
 			return *this;
@@ -36,12 +39,14 @@ namespace Geomerty {
 
 		template<typename T> NodeData& operator=(const T& data)
 		{
+			
 			set(data);
 			return *this;
 		}
 
 		template<typename T> NodeData& operator=(T&& data)
 		{
+			
 			set(std::forward<T>(data));
 			return *this;
 		}
@@ -127,12 +132,15 @@ namespace Geomerty {
 		uint64_t m_type;
 	};
 	std::unordered_map<size_t, NodeData>registry;
+	NodeData* GetPinData(size_t index) {
+		return &registry[index];
+	}
 	class GeomertyNodeBase;
 	class Node;
 	struct ExetContex {
-		GeomertyNodeBase* node;
+		
 		std::vector<NodeData*> inputs;
-		std::vector<NodeData>& outputs;
+		//std::vector<NodeData>& outputs;
 	};
 	class NodeBase {
 	public:
@@ -200,9 +208,7 @@ namespace Geomerty {
 			ID(id), Name(name), Color(color), Type(NodeType::Blueprint), Size(0, 0)
 		{
 		}
-		void Exectue(ExetContex* ctx) {
-			
-		}
+
 		void InstallUi()override {
 
 		}
@@ -236,21 +242,26 @@ namespace Geomerty {
 	public:
 		StringNode(int id, const char* name, ImColor color = ImColor(255, 255, 255)):Node(id, name, color ){}
 		void InstallUi()override {
-			ImGui::InputText("Path",str.data(),256);
+			ImGui::InputText(std::to_string(ID.Get()).c_str(),const_cast<char*>(str.c_str()), 250);
 		}
 		void Init()override {
-			Outputs.emplace_back(GetNextId(), "str", typeid(std::string).hash_code(), PinKind::Output);
+			Outputs.emplace_back(GetNextId(), "Str", typeid(std::string).hash_code(), PinKind::Output);
 			Outputs.back().Node = this;
 			registry[Outputs.back().index] = NodeData(std::string(""));
+			str.reserve(250);
 
-			str.reserve(256);
+			
+
 		}
 		void Execute(ExetContex* ctx)override {
-			registry[Outputs.back().index] = NodeData(str);
+			registry[Outputs.back().index] =str;
+			
+
+			auto temp=registry[Outputs.back().index].get<std::string>();
 			//td::string path=std::any_cast<std::string>((*ctx->inputs)[0]);
 		}
 
-		std::string str;
+		std::string  str;
 	};
 	class Read_MeshNode :public Node {
 	public:
@@ -271,9 +282,15 @@ namespace Geomerty {
 		void Execute(ExetContex* ctx)override {
 			bool flag = false;
 			auto path=ctx->inputs[0]->get<std::string>(&flag);
-			SurfaceMesh mesh;
-			read_obj(mesh, path);
-			registry[Outputs.back().index] = NodeData(mesh);
+			if (std::filesystem::exists(path)) {
+				std::filesystem::path fpath = path;
+				SurfaceMesh mesh;
+                read_obj(mesh, path);
+                registry[Outputs.back().index] = NodeData(mesh);
+			}
+			//SurfaceMesh mesh;
+			//read_obj(mesh, path);
+			//registry[Outputs.back().index] = NodeData(mesh);
 		}
 
 	};

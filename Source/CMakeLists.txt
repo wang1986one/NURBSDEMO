@@ -1,5 +1,5 @@
 add_subdirectory(nurbs)
-add_subdirectory(filamentdemo)
+#add_subdirectory(filamentdemo)
 add_subdirectory(imguinode)
 add_subdirectory(blueprint)
 add_subdirectory(geomerty_process)

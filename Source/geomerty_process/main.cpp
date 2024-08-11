@@ -9,6 +9,15 @@
 #include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include "Device.h"
+#include "WindowSettings.h"
+#include "Window.h"
+#include "InputManager.h"
+#include "UI/Core/UIManager.h"
+#include "UI/Styling/EStyle.h"
+//#include "tools/Clock.h"
+#include "UI/Panels/PanelsManager.h"
+#include "UI/Panels/AView.h"
 
 namespace ed = ax::NodeEditor;
 # ifdef _MSC_VER
@@ -18,76 +27,15 @@ namespace ed = ax::NodeEditor;
 # define portable_strcpy    strcpy
 # define portable_sprintf   sprintf
 # endif
+Windowing::Settings::WindowSettings windowSettings;
+Windowing::Settings::DeviceSettings deviceSettings;
+std::unique_ptr<Windowing::Context::Device>	device;
+std::unique_ptr<Windowing::Window> window;
+std::unique_ptr<Windowing::Inputs::InputManager>inputManager;
+std::unique_ptr<UI::Core::UIManager>uiManager;
+UI::Settings::PanelWindowSettings settings;
+std::unique_ptr<UI::Panels::PanelsManager>m_panelsManager;
 
-#pragma region  igl
-
-static double highdpiw = 1; // High DPI width
-static double highdpih = 1; // High DPI height
-static double scroll_x = 0;
-static double scroll_y = 0;
-
-static void glfw_mouse_press(GLFWwindow* /*window*/, int button, int action, int modifier)
-{
-
-}
-
-static void glfw_error_callback(int /*error*/, const char* description)
-{
-	fputs(description, stderr);
-}
-
-static void glfw_char_mods_callback(GLFWwindow* /*window*/, unsigned int codepoint, int modifier)
-{
-
-}
-
-static void glfw_key_callback(GLFWwindow* window, int key, int /*scancode*/, int action, int modifier)
-{
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, GL_TRUE);
-}
-
-static void glfw_window_size(GLFWwindow* /*window*/, int width, int height)
-{
-
-}
-
-static void glfw_mouse_move(GLFWwindow* /*window*/, double x, double y)
-{
-
-}
-
-static void glfw_mouse_scroll(GLFWwindow* /*window*/, double x, double y)
-{
-	using namespace std;
-	scroll_x += x;
-	scroll_y += y;
-}
-
-static void glfw_drop_callback(GLFWwindow* /*window*/, int /*count*/, const char** /*filenames*/)
-{
-}
-#pragma endregion
-#include  <math.h>
-#include<vector>
-#define SCR_WIDTH 800
-#define SCR_HEIGHT 600
-void g_mainWindow(GLFWwindow* window, int w, int h) {
-	glfw_window_size(window, w, h);
-}
-void Scorllcallback(GLFWwindow* window, double dx, double dy) {
-	glfw_mouse_scroll(window, dx, dy);
-}
-void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-
-	glfw_key_callback(window, key, scancode, action, mods);
-}
-void mouseButton(GLFWwindow* window, int B, int S, int F) {
-	glfw_mouse_press(window, B, S, F);
-}
-void mouseMove(GLFWwindow* window, double x, double y) {
-	glfw_mouse_move(window, x, y);
-}
 static ed::EditorContext* m_Editor = nullptr;
 struct Example {
 	std::vector<Geomerty::Node*>    m_Nodes;
@@ -529,75 +477,79 @@ struct Example {
 			}
 
 		}
-
+	}
+	template<typename T>
+	T* GetNode(int index) {
+		auto Node_data = Geomerty::GetPinData(m_Nodes[index]->Outputs[0].index);
+		return Node_data->Get<T>();
 	}
 };
+#include"gl/Viewer.h"
+
+opengl::glfw::Viewer viewer;
+Eigen::MatrixXd V;
+Eigen::MatrixXi F;
 int main()
 {
-	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	// glfw window creation
-	// --------------------
-	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "NURBS test", NULL, NULL);
+	deviceSettings.contextMajorVersion = 4;
+	deviceSettings.contextMinorVersion = 6;
+	windowSettings.title = "Geomery";
+	windowSettings.width = 1600;
+	windowSettings.height = 900;
+	windowSettings.maximized = true;
+	device = std::make_unique<Windowing::Context::Device>(deviceSettings);
+	window = std::make_unique<Windowing::Window>(*device, windowSettings);
+	window->SetIcon("Res/Texture/awesomeface.png");
+	inputManager = std::make_unique<Windowing::Inputs::InputManager>(*window);;
+	window->MakeCurrentContext();
 
-	if (window == NULL)
-	{
-		std::cout << "Failed to create GLFW window" << std::endl;
-		glfwTerminate();
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		return -1;
 	}
-	glfwMakeContextCurrent(window);
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-	{
-		std::cout << "Failed to initialize GLAD" << std::endl;
-		return -1;
-	}
-	glfwSetWindowSizeCallback(window, g_mainWindow);
-	glfwSetScrollCallback(window, Scorllcallback);
-	glfwSetKeyCallback(window, KeyCallback);
-	glfwSetMouseButtonCallback(window, mouseButton);
-	glfwSetCursorPosCallback(window, mouseMove);
-	// GL 3.0 + GLSL 130
-	const char* glsl_version = "#version 130";
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-	IMGUI_CHECKVERSION();
-	ImGui::CreateContext();
-	ImGuiIO& io = ImGui::GetIO();
-	// Setup Dear ImGui style
-	ImGui::StyleColorsDark();
-	ImGui_ImplGlfw_InitForOpenGL(window, true);
-	ImGui_ImplOpenGL3_Init(glsl_version);
+	device->SetVsync(true);
+
+	//初始化UI
+	uiManager = std::make_unique<UI::Core::UIManager>(window->GetGlfwWindow(), UI::Styling::EStyle::ALTERNATIVE_DARK);;
+	uiManager->LoadFont("Ruda_Big", "Res/Font/Ruda-Bold.ttf", 25);
+	uiManager->LoadFont("Ruda_Small", "Res/Font/Ruda-Bold.ttf", 12);
+	uiManager->LoadFont("Ruda_Medium", "Res/Font/Ruda-Bold.ttf", 14);
+	uiManager->UseFont("Ruda_Big");
+	uiManager->EnableDocking(true);
+	settings.closable = true;
+	settings.collapsable = true;
+	settings.dockable = true;
+	UI::Modules::Canvas m_canvas;
+	m_panelsManager = std::make_unique<UI::Panels::PanelsManager>(m_canvas);
+	m_panelsManager->CreatePanel<UI::Panels::MenuBar>("Menu Bar");
+	m_panelsManager->CreatePanel<UI::Panels::AView>("Scene View", true, settings);
+	m_panelsManager->GetPanelAs<UI::Panels::AView>("Scene View").ResizeEvent += [](int p_width, int p_height) {
+		viewer.post_resize(p_width, p_height);
+		};
+	m_panelsManager->GetPanelAs<UI::Panels::AView>("Scene View").DrawInWindow += []() {
+		};
+	m_canvas.MakeDockspace(true);
+	uiManager->SetCanvas(m_canvas);
 	glEnable(GL_DEPTH_TEST);
-
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+	glEnable(GL_BLEND);
+	glfwSwapInterval(0);
 	Example ex;
 	ex.OnStart();
-	ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-	while (!glfwWindowShouldClose(window))
+	viewer.append_mesh();
+    viewer.init();
+	viewer.post_resize(800, 600);
+	while (!window->ShouldClose())
 	{
-		glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
+		glClearColor(0., 0., 0., 0.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
-		ImGuiViewport* viewport = ImGui::GetMainViewport();
-		ImGui::SetNextWindowPos(viewport->Pos);
-		ImGui::SetNextWindowSize(viewport->Size);
-		ImGui::SetNextWindowViewport(viewport->ID);
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-
-		ImGui::Begin("##dockspace", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking);
-		ImGuiID dockspace_id = ImGui::GetID("MyDockspace");
-		ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
-		ImGui::SetWindowPos({ 0.f, 0.f });
-		ImVec2 displaySize = ImGui::GetIO().DisplaySize;
-		ImGui::SetWindowSize({ (float)displaySize.x, (float)displaySize.y });
-		ImGui::End();
-		ImGui::PopStyleVar(3);
+		m_panelsManager->GetPanelAs<UI::Panels::AView>("Scene View").Update(1);
+		m_panelsManager->GetPanelAs<UI::Panels::AView>("Scene View").Bind();
+		viewer.draw();
+		m_panelsManager->GetPanelAs<UI::Panels::AView>("Scene View").UnBind();
+		uiManager->Render();
 		if (ImGui::Begin("widgets", nullptr, ImGuiWindowFlags_None)) {
 			ex.OnFrame(0.01f);
 		}
@@ -605,19 +557,66 @@ int main()
 		if (ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_None)) {
 			if (ImGui::Button("Execute")) {
 				ex.Execute();
+				auto mesh=ex.GetNode<Geomerty::SurfaceMesh>(1);
+				Eigen::MatrixXd SV;
+				auto& pos=mesh->positions();
+				SV.resize(pos.size(),3);
+				for (int i = 0; i < pos.size(); i++) {
+					SV.row(i) << pos[i][0], pos[i][1], pos[i][2];
+				}
+				//"D:\Project\C++\opengl\DX11\data\SHREC2011\alien-1.obj"
+				Eigen::MatrixXi SF;
+				if(mesh->is_quad_mesh())
+				   SF.resize(mesh->faces_size(), 4);
+				else
+				   SF.resize(mesh->faces_size(), 3);
+				auto& faces=mesh->faces();
+				int j = 0;
+				for (auto f : faces) {
+					auto it = mesh->vertices(f).begin();
+					int x = (*it++).idx();
+					int y = (*it++).idx();
+					int z = (*it++).idx();
+					//int w = (*it++).idx();
+					SF.row(j) << x,y,z;
+
+					j++;
+				}
+				viewer.data(0).clear();
+				viewer.data(0).set_mesh(SV, SF);
 			}
 		}
-		
 		ImGui::End();
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-		glfwSwapBuffers(window);
-		glfwPollEvents();
+		device->PollEvents();
+		window->SwapBuffers();
+		if (m_panelsManager->GetPanelAs<UI::Panels::AView>("Scene View").IsHovered()) {
+			viewer.mouse_scroll(inputManager->GetMouseScrollOffset());
+			if (inputManager->IsMouseButtonPressed(Windowing::Inputs::EMouseButton::MOUSE_BUTTON_LEFT))
+				viewer.mouse_down(opengl::glfw::Viewer::MouseButton::Left);
+			if (inputManager->IsMouseButtonReleased(Windowing::Inputs::EMouseButton::MOUSE_BUTTON_LEFT))
+				viewer.mouse_up(opengl::glfw::Viewer::MouseButton::Left);
+			if (inputManager->IsMouseButtonPressed(Windowing::Inputs::EMouseButton::MOUSE_BUTTON_MIDDLE))
+				viewer.mouse_down(opengl::glfw::Viewer::MouseButton::Middle);
+			if (inputManager->IsMouseButtonReleased(Windowing::Inputs::EMouseButton::MOUSE_BUTTON_MIDDLE))
+				viewer.mouse_up(opengl::glfw::Viewer::MouseButton::Middle);
+			if (inputManager->IsMouseButtonPressed(Windowing::Inputs::EMouseButton::MOUSE_BUTTON_RIGHT))
+				viewer.mouse_down(opengl::glfw::Viewer::MouseButton::Right);
+			if (inputManager->IsMouseButtonReleased(Windowing::Inputs::EMouseButton::MOUSE_BUTTON_RIGHT))
+				viewer.mouse_up(opengl::glfw::Viewer::MouseButton::Right);
+			auto [x,y]=inputManager->GetMousePosition();
+			viewer.mouse_move(x,y);
+		}
+
+		
+		inputManager->ClearEvents();
 	}
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
-	glfwDestroyWindow(window);
-	glfwTerminate();
+	//回收资源
+	device.reset();
+	uiManager.reset();
+	m_panelsManager.reset();
+	inputManager.reset();
+	window.reset();
 }
 

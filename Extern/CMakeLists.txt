@@ -98,7 +98,60 @@ if(NOT TARGET igl)
     set_target_properties(igl PROPERTIES FOLDER ${lib_folder}/igl)
     target_compile_options(igl PRIVATE /bigobj )
 endif()
-add_subdirectory(filament)
+
+if(NOT TARGET tools)   
+    set(tools_SOURCE_DIR_ ${CMAKE_CURRENT_SOURCE_DIR}/tools)
+    file(GLOB_RECURSE tools_impl CONFIGURE_DEPENDS  
+    "${tools_SOURCE_DIR_}/*.cpp")
+    file(GLOB_RECURSE tools_head CONFIGURE_DEPENDS  
+    "${tools_SOURCE_DIR_}/*.h")
+    source_group(TREE "${tools_SOURCE_DIR_}" FILES ${tools_impl} ${tools_head})
+    add_library(tools STATIC ${tools_impl} ${tools_head})
+    set_target_properties(tools PROPERTIES FOLDER ${lib_folder}/tools)
+endif()
+if(NOT TARGET math)
+    set(math_SOURCE_DIR_ ${CMAKE_CURRENT_SOURCE_DIR}/Maths)
+    file(GLOB_RECURSE math_impl CONFIGURE_DEPENDS  
+    "${math_SOURCE_DIR_}/*.cpp")
+    file(GLOB_RECURSE math_head CONFIGURE_DEPENDS  
+    "${math_SOURCE_DIR_}/*.h")
+    source_group(TREE "${math_SOURCE_DIR_}" FILES ${math_impl} ${math_head})
+    add_library(math STATIC ${math_impl} ${math_head})
+    target_include_directories(math PUBLIC $<BUILD_INTERFACE:${math_SOURCE_DIR_}/include>)
+    set_target_properties(math PROPERTIES FOLDER ${lib_folder}/math)
+endif()
+if(NOT TARGET ui)
+    set(ui_SOURCE_DIR_ ${CMAKE_CURRENT_SOURCE_DIR}/UI)
+    file(GLOB_RECURSE ui_impl CONFIGURE_DEPENDS  
+    "${ui_SOURCE_DIR_}/*.cpp")
+    file(GLOB_RECURSE ui_head CONFIGURE_DEPENDS  
+    "${ui_SOURCE_DIR_}/*.h")
+    source_group(TREE "${ui_SOURCE_DIR_}" FILES ${ui_impl} ${ui_head})
+    add_library(ui STATIC ${ui_impl} ${ui_head})
+    target_link_libraries(ui PUBLIC imgui)
+    target_link_libraries(ui PUBLIC glad)
+    target_link_libraries(ui PUBLIC math)
+    target_link_libraries(ui PUBLIC tools)
+    target_include_directories(ui PUBLIC $<BUILD_INTERFACE:${ui_SOURCE_DIR_}/include>)
+    set_target_properties(ui PROPERTIES FOLDER ${lib_folder}/ui)
+endif()
+
+if(NOT TARGET window)
+    add_definitions(-DUNICODE -D_UNICODE)
+    set(window_SOURCE_DIR_ ${CMAKE_CURRENT_SOURCE_DIR}/Window)
+    file(GLOB_RECURSE window_impl CONFIGURE_DEPENDS  
+    "${window_SOURCE_DIR_}/*.cpp")
+    file(GLOB_RECURSE window_head CONFIGURE_DEPENDS  
+    "${window_SOURCE_DIR_}/*.h")
+    source_group(TREE "${window_SOURCE_DIR_}" FILES ${window_impl} ${window_head})
+    add_library(window STATIC ${window_impl} ${window_head})
+    target_link_libraries(window PUBLIC glfw)
+    target_link_libraries(window PUBLIC tools)
+    target_link_libraries(window PUBLIC std_image)
+    target_include_directories(window PUBLIC $<BUILD_INTERFACE:${window_SOURCE_DIR_}>)
+    set_target_properties(window PROPERTIES FOLDER ${lib_folder}/window)
+endif()
+#add_subdirectory(filament)
 
 
 

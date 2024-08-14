@@ -1,8 +1,7 @@
 #pragma once
 #include"nodes.h"
-#include"graph.h"
 namespace Geomerty {
-	struct Graph;
+
 	class Read_MeshNode :public Node {
 	public:
 		Read_MeshNode(int id, const char* name, ImColor color = ImColor(255, 255, 255)) :Node(id, name, color) {}

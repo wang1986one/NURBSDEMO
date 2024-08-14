@@ -2,7 +2,6 @@
 #include"nodes.h"
 
 namespace Geomerty {
-	struct Graph;
 	class StringNode :public Node {
 	public:
 		StringNode(int id, const char* name, ImColor color = ImColor(255, 255, 255)) :Node(id, name, color) {}

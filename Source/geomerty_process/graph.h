@@ -9,6 +9,7 @@
 #include "nodes.h"
 #include"string_node.h"
 #include"readmesh_node.h"
+#include"smoothmesh_node.h"
 namespace ed = ax::NodeEditor;
 namespace Geomerty {
 
@@ -112,6 +113,28 @@ namespace Geomerty {
 			m_Nodes.back()->Init(registry);
 			return m_Nodes.back();
 		}
+		Geomerty::Node* SpawnSmoothMesh_Node()
+		{
+			m_Nodes.push_back(new Geomerty::Smooth_MeshNode(Geomerty::GetNextId(), "Smooth_MeshNode"));
+
+			m_Nodes.back()->Init(registry);
+			return m_Nodes.back();
+		}
+		int GetSelectNode() {
+			std::vector<ed::NodeId> selectedNodes;
+			
+			selectedNodes.resize(ed::GetSelectedObjectCount());
+			int nodeCount = ed::GetSelectedNodes(selectedNodes.data(), static_cast<int>(selectedNodes.size()));
+			selectedNodes.resize(nodeCount);
+			for (int i = 0; i < m_Nodes.size(); i++) {
+				bool isSelected = std::find(selectedNodes.begin(), selectedNodes.end(), m_Nodes[i]->ID) != selectedNodes.end();
+				if (isSelected) {
+					return i;
+				}
+
+			}
+			return -1;
+		}
 		void OnStart() {
 
 			m_Editor = ed::CreateEditor(nullptr);
@@ -119,6 +142,7 @@ namespace Geomerty {
 			Geomerty::Node* node;
 			node = SpawnStringNode(); ed::SetNodePosition(node->ID, ImVec2(-252, 220));
 			node = SpawnRead_MeshNode(); ed::SetNodePosition(node->ID, ImVec2(-300, 351));
+			node = SpawnSmoothMesh_Node(); ed::SetNodePosition(node->ID, ImVec2(-350, 351));
 			ed::NavigateToContent();
 		}
 		void OnStop()
@@ -332,6 +356,7 @@ namespace Geomerty {
 			}
 			ed::Resume();
 			ed::Suspend();
+			
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
 			if (ImGui::BeginPopup("Node Context Menu"))
 			{
@@ -405,6 +430,8 @@ namespace Geomerty {
 					node = SpawnStringNode();
 				if (ImGui::MenuItem("ReadMesh"))
 					node = SpawnRead_MeshNode();
+				if (ImGui::MenuItem("SmoothMesh"))
+					node = SpawnSmoothMesh_Node();
 				if (node)
 				{
 					createNewNode = false;
@@ -438,7 +465,7 @@ namespace Geomerty {
 			ImGui::PopStyleVar();
 			ed::Resume();
 			ed::End();
-			ed::SetCurrentEditor(nullptr);
+			//ed::SetCurrentEditor(nullptr);
 		}
 		void Execute() {
 			for (auto& n : m_Nodes) {

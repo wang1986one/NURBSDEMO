@@ -96,7 +96,8 @@ int main()
 		if (ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_None)) {
 			if (ImGui::Button("Execute")) {
 				ex.Execute();
-				auto mesh=ex.GetNode<Geomerty::SurfaceMesh>(1);
+				int index = ex.GetSelectNode();
+				auto mesh=ex.GetNode<Geomerty::SurfaceMesh>(index);
 				Eigen::MatrixXd SV;
 				auto& pos=mesh->positions();
 				SV.resize(pos.size(),3);

@@ -92,7 +92,7 @@ public:
   // Text Rendering
   struct TextGL
   { 
-    std::uint_t dirty_flag;
+    std::uint8_t dirty_flag;
     GLuint vao_labels;
     GLuint vbo_labels_pos;
     GLuint vbo_labels_characters;
@@ -121,7 +121,7 @@ public:
   Eigen::Matrix<unsigned, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> points_F_vbo;
 
   /// Marks dirty buffers that need to be uploaded to OpenGL
-  std::uint_t dirty;
+  std::uint8_t dirty;
 
    MeshGL();
 

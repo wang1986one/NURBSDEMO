@@ -219,6 +219,7 @@ int main()
 		ImGui::SameLine();
 		ed::BeginPin(uniqueId++, ed::PinKind::Output);
 		ImGui::Text("Out->");
+		
 		ed::EndPin();
 		ed::EndNode();
 		ed::End();
@@ -336,6 +337,7 @@ int main()
 		ImGui::SameLine();
 		ed::BeginPin(uniqueId++, ed::PinKind::Output);
 		ImGui::Text("Out ->");
+		
 		ed::EndPin();
 
 		// Tree column startup -------------------------------------------------------------------

@@ -1,14 +1,16 @@
 #pragma once
-#include "nous_mesh/mesh.h"
+
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
 #include "nous_nurbs_curve.h"
 #include "nous_nurbs_util.h"
-namespace nous
+namespace Geomerty
 {
 namespace nurbs
 {
+    using vec3 = Eigen::Vector3<float>;
+    using vec4 = Eigen::Vector4<float>;
 namespace util
 {
 
@@ -21,10 +23,10 @@ namespace util
  * @return point Resulting point on the curve at parameter u.
  */
 
-inline pos_t curve_point(size_t degree, const std::vector<float>& knots, const std::vector<pos_t>& control_points, float u)
+inline vec3 curve_point(size_t degree, const std::vector<float>& knots, const std::vector<vec3>& control_points, float u)
 {
     // Initialize result to 0s
-    pos_t point = pos_t::Zero();
+    vec3 point = vec3::Zero();
 
     // Find span and corresponding non-zero basis functions
     int span = find_span(degree, knots, u);
@@ -426,7 +428,7 @@ inline RationalCurve curve_knot_insert(const RationalCurve& crv, float u, size_t
  * Split the curve into two
  * @param[in] degree Degree of curve
  * @param[in] knots Knot vector
- * @param[in] control_points Array of control points
+ * @param[in] control_points std::vector of control points
  * @param[in] u Parameter to split curve
  * @param[out] left_knots Knots of the left part of the curve
  * @param[out] left_control_points Control points of the left part of the curve
@@ -524,24 +526,24 @@ inline void curve_split(size_t degree, const std::vector<float>& knots, const st
  * Split a curve into two
  * @param[in] crv Curve object
  * @param[in] u Parameter to split at
- * @return Tuple with first half and second half of the curve
+ * @return std::tuple with first half and second half of the curve
  */
-inline Tuple<Curve, Curve> curve_split(const Curve& crv, float u)
+inline std::tuple<Curve, Curve> curve_split(const Curve& crv, float u)
 {
     Curve left, right;
     left.m_degree = crv.m_degree;
     right.m_degree = crv.m_degree;
     curve_split(crv.m_degree, crv.m_knots, crv.m_control_points, u, left.m_knots, left.m_control_points, right.m_knots, right.m_control_points);
-    return Tuple<Curve, Curve>(std::move(left), std::move(right));
+    return std::tuple<Curve, Curve>(std::move(left), std::move(right));
 }
 
 /**
  * Split a rational curve into two
  * @param[in] crv RationalCurve object
  * @param[in] u Parameter to split at
- * @return Tuple with first half and second half of the curve
+ * @return std::tuple with first half and second half of the curve
  */
-inline Tuple<RationalCurve, RationalCurve> curve_split(const RationalCurve& crv, float u)
+inline std::tuple<RationalCurve, RationalCurve> curve_split(const RationalCurve& crv, float u)
 {
     RationalCurve left, right;
     left.m_degree = crv.m_degree;
@@ -570,7 +572,7 @@ inline Tuple<RationalCurve, RationalCurve> curve_split(const RationalCurve& crv,
         right.m_control_points.push_back(util::homogenous_to_cartesian(right_Cw[i]));
         right.m_weights.push_back(right_Cw[i].w());
     }
-    return Tuple<RationalCurve, RationalCurve>(std::move(left), std::move(right));
+    return std::tuple<RationalCurve, RationalCurve>(std::move(left), std::move(right));
 }
 /*
  *
@@ -682,14 +684,14 @@ inline bool least_square_approximation(int degree, const std::vector<vec3>& thro
  * @param[in] throughpoints The points that the ration B-spline curve will fit
  * @param[out] crv The ration B-spline curve will fit
  */
-inline void global_interpolation(int degree, const Array<vec3>& throughpoints, RationalCurve& crv)
+inline void global_interpolation(int degree, const std::vector<vec3>& throughpoints, RationalCurve& crv)
 {
 
     int size = throughpoints.size();
     int n = size - 1;
 
     // The chord length parameterization maybe others better
-    Array<float> uk(size);
+    std::vector<float> uk(size);
     uk[n] = 1.0f;
     float d = 0.0f;
     for(int i = 1; i < size; i++)
@@ -703,7 +705,7 @@ inline void global_interpolation(int degree, const Array<vec3>& throughpoints, R
 
     // AverageKnotVector
     int m = n + degree + 1;
-    Array<float> knot_vector(m + 1, 0.0f);
+    std::vector<float> knot_vector(m + 1, 0.0f);
     for(int i = m - degree; i <= m; i++)
     {
         knot_vector[i] = 1.0f;
@@ -721,8 +723,8 @@ inline void global_interpolation(int degree, const Array<vec3>& throughpoints, R
 
     Eigen::SparseMatrix<float> a;
     Eigen::SparseMatrix<float> b;
-    Array<Eigen::Triplet<float>> triplets_a;
-    Array<Eigen::Triplet<float>> triplets_b;
+    std::vector<Eigen::Triplet<float>> triplets_a;
+    std::vector<Eigen::Triplet<float>> triplets_b;
     for(int i = 1; i < n; i++)
     {
         int spanIndex = find_span(degree, knot_vector, uk[i]);

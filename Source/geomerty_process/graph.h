@@ -173,9 +173,12 @@ namespace Geomerty {
 			//blueprint and simple
 			for (auto& node : m_Nodes)
 			{
-
+				
 				ed::BeginNode(node->ID);
 				ImGui::Text(node->Name.c_str());
+				
+				auto HeaderMin = ImGui::GetItemRectMin();
+				auto HeaderMax = ImGui::GetItemRectMax();
 				for (auto& input : node->Inputs)
 				{
 					auto alpha = ImGui::GetStyle().Alpha;
@@ -199,7 +202,7 @@ namespace Geomerty {
 					ed::EndPin();
 
 				}
-				node->InstallUi();
+
 				for (auto& output : node->Outputs)
 				{
 					auto alpha = ImGui::GetStyle().Alpha;
@@ -216,6 +219,8 @@ namespace Geomerty {
 					//ImGui::PopStyleVar();
 					ed::EndPin();
 				}
+				
+				node->InstallUi();
 				ed::EndNode();
 			}
 

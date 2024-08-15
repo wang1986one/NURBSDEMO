@@ -6,7 +6,7 @@ namespace Geomerty {
 	public:
 		StringNode(int id, const char* name, ImColor color = ImColor(255, 255, 255)) :Node(id, name, color) {}
 		void InstallUi()override {
-			ImGui::InputText(std::to_string(ID.Get()).c_str(), str.data(), 250);
+			ImGui::InputText("##1", str.data(), 250);
 		}
 		void Init(std::unordered_map<size_t, Geomerty::NodeData>& registry)override {
 			Outputs.emplace_back(GetNextId(), "Str", typeid(std::string).hash_code(), PinKind::Output);

@@ -280,7 +280,7 @@ public:
   std::vector<std::string>  labels_strings;
 
   /// Marks dirty buffers that need to be uploaded to OpenGL
-  uint32_t dirty;
+  uint_t dirty;
 
   /// Enable per-face or per-vertex properties
   bool face_based;

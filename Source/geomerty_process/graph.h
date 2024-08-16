@@ -78,6 +78,9 @@ namespace Geomerty {
 		ed::EditorContext* m_Editor;
 		std::vector<Geomerty::Node*>    m_Nodes;
 		std::vector<Geomerty::Link>    m_Links;
+		std::unordered_map<uintptr_t, Geomerty::Node*>m_Node_Id_map;
+		std::unordered_map<uintptr_t, Geomerty::Link*>m_Link_Id_map;
+		std::unordered_map<uintptr_t, Geomerty::Pin*>m_Pin_Id_map;
 		std::unordered_map<size_t, Geomerty::NodeData>registry;
 		Geomerty::NodeData* GetPinData(size_t index) {
 			return &registry[index];
@@ -88,45 +91,62 @@ namespace Geomerty {
 		}
 		Geomerty::Node* FindNode(ed::NodeId id)
 		{
+
+			if (m_Node_Id_map.find(id.Get()) != m_Node_Id_map.end()) {
+				return m_Node_Id_map[id.Get()];
+			}
 			for (auto& node : m_Nodes)
-				if (node->ID == id)
+				if (node->ID == id) {
+					m_Node_Id_map[id.Get()] = node;
 					return node;
+				}
+
 			return nullptr;
 		}
 		Geomerty::Link* FindLink(ed::LinkId id)
 		{
+			if (m_Link_Id_map.find(id.Get()) != m_Link_Id_map.end()) {
+				return m_Link_Id_map[id.Get()];
+			}
 			for (auto& link : m_Links)
-				if (link.ID == id)
+				if (link.ID == id) {
+					m_Link_Id_map[id.Get()] = &link;
 					return &link;
+				}
 			return nullptr;
 		}
 		Geomerty::Pin* FindPin(ed::PinId id)
 		{
 			if (!id)
 				return nullptr;
-
+			if (m_Pin_Id_map.find(id.Get()) != m_Pin_Id_map.end()) {
+				return m_Pin_Id_map[id.Get()];
+			}
 			for (auto& node : m_Nodes)
 			{
 				for (auto& pin : node->Inputs)
-					if (pin.ID == id)
+					if (pin.ID == id) {
+						m_Pin_Id_map[id.Get()] = &pin;
 						return &pin;
+					}
+
 
 				for (auto& pin : node->Outputs)
-					if (pin.ID == id)
+					if (pin.ID == id) {
+						m_Pin_Id_map[id.Get()] = &pin;
 						return &pin;
-			}
+					}
 
+			}
 			return nullptr;
 		}
 		bool IsPinLinked(ed::PinId id)
 		{
 			if (!id)
 				return false;
-
 			for (auto& link : m_Links)
 				if (link.StartPinID == id || link.EndPinID == id)
 					return true;
-
 			return false;
 		}
 		Geomerty::Pin* FindConnectedStartPin(ed::PinId id) {
@@ -145,20 +165,7 @@ namespace Geomerty {
 
 			return true;
 		}
-		void BuildNode(Geomerty::Node* node)
-		{
-			for (auto& input : node->Inputs)
-			{
-				input.Node = node;
-				input.Kind = Geomerty::PinKind::Input;
-			}
 
-			for (auto& output : node->Outputs)
-			{
-				output.Node = node;
-				output.Kind = Geomerty::PinKind::Output;
-			}
-		}
 		Geomerty::Node* SpawnStringNode()
 		{
 			m_Nodes.push_back(new Geomerty::StringNode(Geomerty::GetNextId(), "StringNode", ImColor(255, 255, 128)));
@@ -176,13 +183,11 @@ namespace Geomerty {
 		Geomerty::Node* SpawnSmoothMesh_Node()
 		{
 			m_Nodes.push_back(new Geomerty::Smooth_MeshNode(Geomerty::GetNextId(), "Smooth_MeshNode"));
-
 			m_Nodes.back()->Init(registry);
 			return m_Nodes.back();
 		}
 		int GetSelectNode() {
 			std::vector<ed::NodeId> selectedNodes;
-
 			selectedNodes.resize(ed::GetSelectedObjectCount());
 			int nodeCount = ed::GetSelectedNodes(selectedNodes.data(), static_cast<int>(selectedNodes.size()));
 			selectedNodes.resize(nodeCount);
@@ -191,7 +196,6 @@ namespace Geomerty {
 				if (isSelected) {
 					return i;
 				}
-
 			}
 			return -1;
 		}
@@ -284,7 +288,7 @@ namespace Geomerty {
 					ed::EndPin();
 				}
 
-				//node->InstallUi();
+
 				ed::EndNode();
 			}
 
@@ -536,8 +540,10 @@ namespace Geomerty {
 			ed::End();
 			//ed::SetCurrentEditor(nullptr);
 		}
-		void Execute() {
-			for (auto& n : m_Nodes) {
+		void Execute(int to_index) {
+			for (int i = 0; i < m_Nodes.size(); i++) {
+				Geomerty::Node* n = m_Nodes[i];
+
 				bool link_all = true;
 				std::vector<Geomerty::NodeData*>data_arr;
 				for (auto in_put : n->Inputs) {
@@ -551,6 +557,9 @@ namespace Geomerty {
 				if (link_all) {
 					Geomerty::ExetContex ctx{ data_arr };
 					n->Execute(&ctx, registry);
+				}
+				if (to_index == i) {
+					break;
 				}
 
 			}

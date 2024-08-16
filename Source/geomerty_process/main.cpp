@@ -93,37 +93,17 @@ int main()
 			ex.OnFrame(0.01f);
 		}
 		ImGui::End();
-		if (ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_None)) {
-			if (ImGui::Button("Execute")) {
-				ex.Execute();
-				int index = ex.GetSelectNode();
-				auto mesh = ex.GetNode<Geomerty::SurfaceMesh>(index);
-				Eigen::MatrixXd SV;
-				auto& pos = mesh->positions();
-				SV.resize(pos.size(), 3);
-				for (int i = 0; i < pos.size(); i++) {
-					SV.row(i) << pos[i][0], pos[i][1], pos[i][2];
-				}
-				//"D:\Project\C++\opengl\DX11\data\SHREC2011\alien-1.obj"
-				Eigen::MatrixXi SF;
-				if (mesh->is_quad_mesh())
-					SF.resize(mesh->faces_size(), 4);
-				else
-					SF.resize(mesh->faces_size(), 3);
-				auto& faces = mesh->faces();
-				int j = 0;
-				for (auto f : faces) {
-					auto it = mesh->vertices(f).begin();
-					int x = (*it++).idx();
-					int y = (*it++).idx();
-					int z = (*it++).idx();
-					//int w = (*it++).idx();
-					SF.row(j) << x, y, z;
 
-					j++;
-				}
-				viewer.data(0).clear();
-				viewer.data(0).set_mesh(SV, SF);
+		if (ImGui::Begin("Inspector", nullptr, ImGuiWindowFlags_None)) {
+			int index = ex.GetSelectNode();
+			if (index != -1) {
+				ex.m_Nodes[index]->InstallUi();
+			}
+			if (ImGui::Button("Execute")) {
+				//D:\Project\opengl\res\PathTrace\Scenes\Scene\alien-20.obj
+				ex.Execute(index);
+				if (index != -1)
+					ex.m_Nodes[index]->Present(viewer, ex.registry);;
 			}
 		}
 		ImGui::End();

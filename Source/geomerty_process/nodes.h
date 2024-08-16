@@ -7,8 +7,10 @@
 #include<filesystem>
 #include<type_traits>
 #include <imgui_node_editor.h>
+#include"gl/Viewer.h"
 #include"surface_mesh.h"
 #include"read_mesh.h"
+
 namespace Geomerty {
 	struct Graph;
 	static int uniqueId = 1;
@@ -16,7 +18,7 @@ namespace Geomerty {
 		return uniqueId++;
 	}
 	struct NodeData {
-		void* m_data=nullptr;
+		void* m_data = nullptr;
 		uint64_t m_type;
 		template<typename T>
 		T* Get() {
@@ -28,7 +30,7 @@ namespace Geomerty {
 		template<typename T>
 		void Set(void* ptr) {
 			if (typeid(T).hash_code() == m_type) {
-				if (m_data&& ptr!=m_data) {
+				if (m_data && ptr != m_data) {
 					delete m_data;
 					m_data = nullptr;
 				}
@@ -38,19 +40,20 @@ namespace Geomerty {
 			throw std::runtime_error("type error");
 		}
 	};
-	
+
 	class Node;
 	struct ExetContex {
 		std::vector<NodeData*> inputs;
-	
-		
+
+
 	};
 	class NodeBase {
 	public:
 		NodeBase() = default;
 		virtual void InstallUi() = 0;
-		virtual void Init(std::unordered_map<size_t, Geomerty::NodeData>&registry) = 0;
+		virtual void Init(std::unordered_map<size_t, Geomerty::NodeData>& registry) = 0;
 		virtual void Execute(ExetContex* ctx, std::unordered_map<size_t, Geomerty::NodeData>& registry) = 0;
+		virtual void Present(opengl::glfw::Viewer& viewer, std::unordered_map<size_t, Geomerty::NodeData>& registry) = 0;
 	};
 
 	using PinType = size_t;
@@ -75,17 +78,17 @@ namespace Geomerty {
 		PinType Type;
 		PinKind Kind;
 		size_t index;
-		Pin(int id, const char* name, PinType type, PinKind k= PinKind::Input) :
-			ID(id), Node(nullptr), Name(name), Type(type), Kind(k),index(id)
+		Pin(int id, const char* name, PinType type, PinKind k = PinKind::Input) :
+			ID(id), Node(nullptr), Name(name), Type(type), Kind(k), index(id)
 		{
 		}
 
 	};
-	
-	struct Node:public NodeBase
+
+	struct Node :public NodeBase
 	{
-		ax::NodeEditor::NodeId ID; 
-		
+		ax::NodeEditor::NodeId ID;
+
 		std::string Name;
 		std::vector<Pin> Inputs;
 		std::vector<Pin> Outputs;
@@ -94,9 +97,9 @@ namespace Geomerty {
 		ImVec2 Size;
 		std::string State;
 		std::string SavedState;
-	   
 
-		Node() = default;	
+
+		Node() = default;
 		Node(int id, const char* name, ImColor color = ImColor(255, 255, 255)) :
 			ID(id), Name(name), Color(color), Type(NodeType::Blueprint), Size(0, 0)
 		{
@@ -111,6 +114,8 @@ namespace Geomerty {
 		void Execute(ExetContex* ctx, std::unordered_map<size_t, Geomerty::NodeData>& registry)override {
 
 
+		}
+		void Present(opengl::glfw::Viewer& viewer, std::unordered_map<size_t, Geomerty::NodeData>& registry)override {
 		}
 	};
 	struct Link

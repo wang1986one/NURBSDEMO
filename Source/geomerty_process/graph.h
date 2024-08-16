@@ -11,6 +11,66 @@
 #include"readmesh_node.h"
 #include"smoothmesh_node.h"
 namespace ed = ax::NodeEditor;
+
+void DrawIcon(ImDrawList* drawList, const ImVec2& a, const ImVec2& b, bool filled, ImU32 color, ImU32 innerColor)
+{
+	auto rect = ImRect(a, b);
+	auto rect_x = rect.Min.x;
+	auto rect_y = rect.Min.y;
+	auto rect_w = rect.Max.x - rect.Min.x;
+	auto rect_h = rect.Max.y - rect.Min.y;
+	auto rect_center_x = (rect.Min.x + rect.Max.x) * 0.5f;
+	auto rect_center_y = (rect.Min.y + rect.Max.y) * 0.5f;
+	auto rect_center = ImVec2(rect_center_x, rect_center_y);
+	const auto outline_scale = rect_w / 24.0f;
+	const auto extra_segments = static_cast<int>(2 * outline_scale); // for full circle
+	auto triangleStart = rect_center_x + 0.32f * rect_w;
+	auto rect_offset = -static_cast<int>(rect_w * 0.25f * 0.25f);
+	rect.Min.x += rect_offset;
+	rect.Max.x += rect_offset;
+	rect_x += rect_offset;
+	rect_center_x += rect_offset * 0.5f;
+	rect_center.x += rect_offset * 0.5f;
+	const auto c = rect_center;
+	if (!filled)
+	{
+		const auto r = 0.5f * rect_w / 2.0f - 0.5f;
+
+		if (innerColor & 0xFF000000)
+			drawList->AddCircleFilled(c, r, innerColor, 12 + extra_segments);
+		drawList->AddCircle(c, r, color, 12 + extra_segments, 2.0f * outline_scale);
+	}
+	else
+	{
+		drawList->AddCircleFilled(c, 0.5f * rect_w / 2.0f, color, 12 + extra_segments);
+	}
+	const auto triangleTip = triangleStart + rect_w * (0.45f - 0.32f);
+
+	drawList->AddTriangleFilled(
+		ImVec2(ceilf(triangleTip), rect_y + rect_h * 0.5f),
+		ImVec2(triangleStart, rect_center_y + 0.15f * rect_h),
+		ImVec2(triangleStart, rect_center_y - 0.15f * rect_h),
+		color);
+
+}
+void DrawPinIcon(const Geomerty::Pin& pin, bool connected, int alpha)
+{
+
+
+	ImColor  color = pin.Kind == Geomerty::PinKind::Input ? ImColor(68, 201, 156) : ImColor(255, 48, 48);
+	color.Value.w = alpha / 255.0f;
+	const int m_PinIconSize = 24;
+	auto size = ImVec2(static_cast<float>(m_PinIconSize), static_cast<float>(m_PinIconSize));
+	if (ImGui::IsRectVisible(size))
+	{
+		auto cursorPos = ImGui::GetCursorScreenPos();
+		auto drawList = ImGui::GetWindowDrawList();
+		DrawIcon(drawList, cursorPos, cursorPos + size, connected, ImColor(color), ImColor(32, 32, 32, alpha));
+	}
+
+	ImGui::Dummy(ImVec2(static_cast<float>(18), static_cast<float>(24)));
+};
+
 namespace Geomerty {
 
 
@@ -102,14 +162,14 @@ namespace Geomerty {
 		Geomerty::Node* SpawnStringNode()
 		{
 			m_Nodes.push_back(new Geomerty::StringNode(Geomerty::GetNextId(), "StringNode", ImColor(255, 255, 128)));
-			
+
 			m_Nodes.back()->Init(registry);
 			return m_Nodes.back();
 		}
 		Geomerty::Node* SpawnRead_MeshNode()
 		{
 			m_Nodes.push_back(new Geomerty::Read_MeshNode(Geomerty::GetNextId(), "Read_MeshNode"));
-			
+
 			m_Nodes.back()->Init(registry);
 			return m_Nodes.back();
 		}
@@ -122,7 +182,7 @@ namespace Geomerty {
 		}
 		int GetSelectNode() {
 			std::vector<ed::NodeId> selectedNodes;
-			
+
 			selectedNodes.resize(ed::GetSelectedObjectCount());
 			int nodeCount = ed::GetSelectedNodes(selectedNodes.data(), static_cast<int>(selectedNodes.size()));
 			selectedNodes.resize(nodeCount);
@@ -173,10 +233,10 @@ namespace Geomerty {
 			//blueprint and simple
 			for (auto& node : m_Nodes)
 			{
-				
+
 				ed::BeginNode(node->ID);
 				ImGui::Text(node->Name.c_str());
-				
+
 				auto HeaderMin = ImGui::GetItemRectMin();
 				auto HeaderMax = ImGui::GetItemRectMax();
 				for (auto& input : node->Inputs)
@@ -186,7 +246,8 @@ namespace Geomerty {
 						alpha = alpha * (48.0f / 255.0f);
 					ed::BeginPin(input.ID, ax::NodeEditor::PinKind::Input);
 					//ImGui::PushStyleVar(ImGuiStyleVar_Alpha, alpha);
-
+					DrawPinIcon(input, IsPinLinked(input.ID), (int)(alpha * 255));
+					ImGui::SameLine();
 					//ImGui::Spring(0);
 					if (!input.Name.empty())
 					{
@@ -199,7 +260,9 @@ namespace Geomerty {
 						//ImGui::Spring(0);
 					}
 					//ImGui::PopStyleVar();
+
 					ed::EndPin();
+
 
 				}
 
@@ -210,7 +273,8 @@ namespace Geomerty {
 						alpha = alpha * (48.0f / 255.0f);
 					//ImGui::PushStyleVar(ImGuiStyleVar_Alpha, alpha);
 					ed::BeginPin(output.ID, ax::NodeEditor::PinKind::Output);
-
+					DrawPinIcon(output, IsPinLinked(output.ID), (int)(alpha * 255));
+					ImGui::SameLine();
 					if (!output.Name.empty())
 					{
 						// ImGui::Spring(0);
@@ -219,8 +283,8 @@ namespace Geomerty {
 					//ImGui::PopStyleVar();
 					ed::EndPin();
 				}
-				
-				node->InstallUi();
+
+				//node->InstallUi();
 				ed::EndNode();
 			}
 
@@ -361,7 +425,7 @@ namespace Geomerty {
 			}
 			ed::Resume();
 			ed::Suspend();
-			
+
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
 			if (ImGui::BeginPopup("Node Context Menu"))
 			{
@@ -486,7 +550,7 @@ namespace Geomerty {
 				}
 				if (link_all) {
 					Geomerty::ExetContex ctx{ data_arr };
-					n->Execute(&ctx,registry);
+					n->Execute(&ctx, registry);
 				}
 
 			}

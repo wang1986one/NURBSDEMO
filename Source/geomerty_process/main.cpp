@@ -75,7 +75,7 @@ int main()
 	Geomerty::Graph ex;
 	ex.OnStart();
 	viewer.append_mesh();
-    viewer.init();
+	viewer.init();
 	viewer.post_resize(800, 600);
 	while (!window->ShouldClose())
 	{
@@ -97,20 +97,20 @@ int main()
 			if (ImGui::Button("Execute")) {
 				ex.Execute();
 				int index = ex.GetSelectNode();
-				auto mesh=ex.GetNode<Geomerty::SurfaceMesh>(index);
+				auto mesh = ex.GetNode<Geomerty::SurfaceMesh>(index);
 				Eigen::MatrixXd SV;
-				auto& pos=mesh->positions();
-				SV.resize(pos.size(),3);
+				auto& pos = mesh->positions();
+				SV.resize(pos.size(), 3);
 				for (int i = 0; i < pos.size(); i++) {
 					SV.row(i) << pos[i][0], pos[i][1], pos[i][2];
 				}
 				//"D:\Project\C++\opengl\DX11\data\SHREC2011\alien-1.obj"
 				Eigen::MatrixXi SF;
-				if(mesh->is_quad_mesh())
-				   SF.resize(mesh->faces_size(), 4);
+				if (mesh->is_quad_mesh())
+					SF.resize(mesh->faces_size(), 4);
 				else
-				   SF.resize(mesh->faces_size(), 3);
-				auto& faces=mesh->faces();
+					SF.resize(mesh->faces_size(), 3);
+				auto& faces = mesh->faces();
 				int j = 0;
 				for (auto f : faces) {
 					auto it = mesh->vertices(f).begin();
@@ -118,7 +118,7 @@ int main()
 					int y = (*it++).idx();
 					int z = (*it++).idx();
 					//int w = (*it++).idx();
-					SF.row(j) << x,y,z;
+					SF.row(j) << x, y, z;
 
 					j++;
 				}
@@ -145,11 +145,9 @@ int main()
 				viewer.mouse_down(opengl::glfw::Viewer::MouseButton::Right);
 			if (inputManager->IsMouseButtonReleased(Windowing::Inputs::EMouseButton::MOUSE_BUTTON_RIGHT))
 				viewer.mouse_up(opengl::glfw::Viewer::MouseButton::Right);
-			auto [x,y]=inputManager->GetMousePosition();
-			viewer.mouse_move(x,y);
+			auto [x, y] = inputManager->GetMousePosition();
+			viewer.mouse_move(x, y);
 		}
-
-		
 		inputManager->ClearEvents();
 	}
 	//回收资源

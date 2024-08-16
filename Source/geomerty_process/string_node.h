@@ -17,7 +17,7 @@ namespace Geomerty {
 		}
 		void Execute(ExetContex* ctx, std::unordered_map<size_t, Geomerty::NodeData>& registry)override {
 			registry[Outputs.back().index].Set<std::string>(&str);
-			//td::string path=std::any_cast<std::string>((*ctx->inputs)[0]);
+
 		}
 		std::string  str;
 	};

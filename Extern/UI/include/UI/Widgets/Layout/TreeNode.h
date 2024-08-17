@@ -4,7 +4,7 @@
 
 #include <vector>
 
-#include <../Tools/Event.h>
+#include <tools/Event.h>
 
 #include "UI/Internal/WidgetContainer.h"
 #include "UI/Widgets/DataWidget.h"

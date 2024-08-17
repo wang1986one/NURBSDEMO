@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <../Tools/Event.h>
+#include "tools/Event.h"
 
 #include "UI/Widgets/Texts/Text.h"
 namespace UI::Widgets::Texts

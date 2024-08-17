@@ -12,8 +12,15 @@
 #include "gl/Viewer.h"
 #include "UI/Panels/PanelsManager.h"
 #include "panels/ControllerView.h"
+#include "panels/AssetBrowser.h"
 
-
+# ifdef _MSC_VER
+# define portable_strcpy    strcpy_s
+# define portable_sprintf   sprintf_s
+# else
+# define portable_strcpy    strcpy
+# define portable_sprintf   sprintf
+# endif
 Windowing::Settings::WindowSettings windowSettings;
 Windowing::Settings::DeviceSettings deviceSettings;
 std::unique_ptr<Windowing::Context::Device>	device;
@@ -56,6 +63,7 @@ int main()
 	m_panelsManager = std::make_unique<UI::Panels::PanelsManager>(m_canvas);
 	m_panelsManager->CreatePanel<UI::Panels::MenuBar>("Menu Bar");
 	m_panelsManager->CreatePanel<Geomerty::ControllerView>("Scene View", true, settings);
+	m_panelsManager->CreatePanel<Geomerty::AssetBrowser>("Asset Browser", true, settings,"Res\\");
 	m_canvas.MakeDockspace(true);
 	uiManager->SetCanvas(m_canvas);
 	glEnable(GL_DEPTH_TEST);

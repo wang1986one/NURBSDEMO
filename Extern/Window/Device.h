@@ -6,7 +6,7 @@
 
 #include <GLFW/glfw3.h>
 
-#include "../tools/Event.h"
+#include "tools/Event.h"
 #include "EDeviceError.h"
 #include "DeviceSettings.h"
 #include "ECursorShape.h"

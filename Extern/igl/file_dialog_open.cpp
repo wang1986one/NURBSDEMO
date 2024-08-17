@@ -60,12 +60,12 @@ IGL_INLINE std::string igl::file_dialog_open()
   ZeroMemory(&ofn, sizeof(ofn));
   ofn.lStructSize = sizeof(ofn);
   ofn.hwndOwner = NULL;
-  ofn.lpstrFile = szFile;
+  ofn.lpstrFile =(LPWSTR) szFile;
   // Set lpstrFile[0] to '\0' so that GetOpenFileName does not
   // use the contents of szFile to initialize itself.
   ofn.lpstrFile[0] = '\0';
   ofn.nMaxFile = sizeof(szFile);
-  ofn.lpstrFilter = "*.*\0";//off\0*.off\0obj\0*.obj\0mp\0*.mp\0";
+  ofn.lpstrFilter = (LPWSTR)"*.*\0";//off\0*.off\0obj\0*.obj\0mp\0*.mp\0";
   ofn.nFilterIndex = 1;
   ofn.lpstrFileTitle = NULL;
   ofn.nMaxFileTitle = 0;

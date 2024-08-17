@@ -4,7 +4,7 @@
 
 #include <map>
 
-#include <../Tools/Event.h>
+#include "tools/Event.h"
 
 #include "UI/Widgets/DataWidget.h"
 

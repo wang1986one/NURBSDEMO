@@ -24,7 +24,7 @@ IGL_INLINE std::string igl::path_to_executable()
   char buffer[1024];
   std::uint32_t size = sizeof(buffer);
 #if defined (WIN32)
-  GetModuleFileName(nullptr,buffer,size);
+  GetModuleFileName(nullptr,(LPWSTR)buffer,size);
   path = buffer;
 #elif defined (__APPLE__)
   if(_NSGetExecutablePath(buffer, &size) == 0)

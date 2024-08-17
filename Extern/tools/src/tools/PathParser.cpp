@@ -1,6 +1,6 @@
 #include <algorithm>
 
-#include "PathParser.h"
+#include "tools/PathParser.h"
 
 std::string Tools::Utils::PathParser::MakeWindowsStyle(const std::string & p_path)
 {

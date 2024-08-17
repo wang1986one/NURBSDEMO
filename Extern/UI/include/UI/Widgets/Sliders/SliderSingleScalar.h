@@ -3,7 +3,7 @@
 #pragma once
 
 #include <Maths/FVector2.h>
-#include <../Tools/Event.h>
+#include "tools/Event.h"
 
 #include "UI/Widgets/DataWidget.h"
 #include "UI/Widgets/Sliders/ESliderOrientation.h"

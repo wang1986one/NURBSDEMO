@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include <../Tools/Event.h>
+#include "tools/Event.h"
 
 #include "UI/Panels/APanelTransformable.h"
 #include "UI/Settings/PanelWindowSettings.h"

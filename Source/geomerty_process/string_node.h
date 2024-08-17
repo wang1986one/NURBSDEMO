@@ -1,5 +1,6 @@
 #pragma once
 #include"nodes.h"
+#include <UI/Widgets/Layout/Group.h>
 
 namespace Geomerty {
 	class StringNode :public Node {
@@ -7,6 +8,17 @@ namespace Geomerty {
 		StringNode(int id, const char* name, ImColor color = ImColor(255, 255, 255)) :Node(id, name, color) {}
 		void InstallUi()override {
 			ImGui::InputText("Path", str.data(), 250);
+			if (ImGui::BeginDragDropTarget())
+			{
+				ImGuiDragDropFlags target_flags = 0;
+				target_flags |= ImGuiDragDropFlags_AcceptNoDrawDefaultRect; // Don't display the yellow rectangle
+				if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("File", target_flags))
+				{
+					auto data = *(std::pair<std::string, UI::Widgets::Layout::Group*>*)payload->Data;
+					str = data.first;
+				}
+				ImGui::EndDragDropTarget();
+			}
 		}
 		void Init(std::unordered_map<size_t, Geomerty::NodeData>& registry)override {
 			Outputs.emplace_back(GetNextId(), "Str", typeid(std::string).hash_code(), PinKind::Output);

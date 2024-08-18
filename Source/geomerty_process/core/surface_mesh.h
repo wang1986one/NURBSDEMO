@@ -9,9 +9,9 @@
 #include <utility>
 #include <vector>
 
-#include "types.h"
-#include "properties.h"
-#include "exceptions.h"
+#include "core/types.h"
+#include "mesh/properties.h"
+#include "core/exceptions.h"
 
 namespace  Geomerty {
 

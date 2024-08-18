@@ -1,6 +1,6 @@
-#include "ControllerView.h"
+#include "panels/ControllerView.h"
 #include "InputManager.h"
-#include "../ServiceLocator.h"
+#include "core/ServiceLocator.h"
 
 namespace Geomerty {
 	ControllerView::ControllerView(const std::string& p_title, bool p_opened, const UI::Settings::PanelWindowSettings& p_windowSettings):AView(p_title, p_opened,p_windowSettings)

@@ -1,5 +1,5 @@
 #pragma once
-#include"smooth.h"
+#include"algorithm/smooth.h"
 #include <Eigen/Sparse>
 #include <Eigen/Dense>
 

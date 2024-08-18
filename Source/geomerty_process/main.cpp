@@ -1,4 +1,4 @@
-#include"graph.h"
+#include "core/graph.h"
 #include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -6,21 +6,15 @@
 #include "WindowSettings.h"
 #include "Window.h"
 #include "InputManager.h"
-#include "ServiceLocator.h"
+#include "core/ServiceLocator.h"
 #include "UI/Core/UIManager.h"
 #include "UI/Styling/EStyle.h"
-#include "gl/Viewer.h"
+#include "glviewer/Viewer.h"
 #include "UI/Panels/PanelsManager.h"
 #include "panels/ControllerView.h"
 #include "panels/AssetBrowser.h"
 
-# ifdef _MSC_VER
-# define portable_strcpy    strcpy_s
-# define portable_sprintf   sprintf_s
-# else
-# define portable_strcpy    strcpy
-# define portable_sprintf   sprintf
-# endif
+
 Windowing::Settings::WindowSettings windowSettings;
 Windowing::Settings::DeviceSettings deviceSettings;
 std::unique_ptr<Windowing::Context::Device>	device;
@@ -61,6 +55,7 @@ int main()
 	settings.dockable = true;
 	UI::Modules::Canvas m_canvas;
 	m_panelsManager = std::make_unique<UI::Panels::PanelsManager>(m_canvas);
+	Geomerty::ServiceLocator::Provide<UI::Panels::PanelsManager>(*m_panelsManager);
 	m_panelsManager->CreatePanel<UI::Panels::MenuBar>("Menu Bar");
 	m_panelsManager->CreatePanel<Geomerty::ControllerView>("Scene View", true, settings);
 	m_panelsManager->CreatePanel<Geomerty::AssetBrowser>("Asset Browser", true, settings,"Res\\");
@@ -71,6 +66,7 @@ int main()
 	glEnable(GL_BLEND);
 	glfwSwapInterval(0);
 	Geomerty::Graph ex;
+	Geomerty::ServiceLocator::Provide<Geomerty::Graph>(ex);
 	ex.OnStart();
 	while (!window->ShouldClose())
 	{
@@ -98,7 +94,7 @@ int main()
 				//D:\Project\C++\opengl\DX11\data\SHREC2011\alien-1.obj
 				ex.Execute(index);
 				if (index != -1)
-					ex.m_Nodes[index]->Present(m_panelsManager->GetPanelAs<Geomerty::ControllerView>("Scene View").viewer, ex.registry);;
+					ex.m_Nodes[index]->Present(m_panelsManager->GetPanelAs<Geomerty::ControllerView>("Scene View").viewer);
 			}
 		}
 		ImGui::End();

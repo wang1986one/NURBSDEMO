@@ -4,19 +4,14 @@
 #include<vector>
 #include<string>
 #include<unordered_map>
-#include<filesystem>
-#include<type_traits>
 #include <imgui_node_editor.h>
-#include"gl/Viewer.h"
-#include"surface_mesh.h"
-#include"read_mesh.h"
+#include "glviewer/Viewer.h"
+#include "core/surface_mesh.h"
+#include "core/read_mesh.h"
 
 namespace Geomerty {
-	struct Graph;
-	static int uniqueId = 1;
-	int GetNextId() {
-		return uniqueId++;
-	}
+	class Graph;
+	int GetNextId();
 	struct NodeData {
 		void* m_data = nullptr;
 		uint64_t m_type;
@@ -43,17 +38,16 @@ namespace Geomerty {
 
 	class Node;
 	struct ExetContex {
+		Graph* graph;
 		std::vector<NodeData*> inputs;
-
-
 	};
 	class NodeBase {
 	public:
 		NodeBase() = default;
 		virtual void InstallUi() = 0;
-		virtual void Init(std::unordered_map<size_t, Geomerty::NodeData>& registry) = 0;
-		virtual void Execute(ExetContex* ctx, std::unordered_map<size_t, Geomerty::NodeData>& registry) = 0;
-		virtual void Present(opengl::glfw::Viewer& viewer, std::unordered_map<size_t, Geomerty::NodeData>& registry) = 0;
+		virtual void Init(Graph* graph) = 0;
+		virtual void Execute(ExetContex* ctx) = 0;
+		virtual void Present(opengl::glfw::Viewer& viewer) = 0;
 	};
 
 	using PinType = size_t;
@@ -82,7 +76,6 @@ namespace Geomerty {
 			ID(id), Node(nullptr), Name(name), Type(type), Kind(k), index(id)
 		{
 		}
-
 	};
 
 	struct Node :public NodeBase
@@ -97,26 +90,15 @@ namespace Geomerty {
 		ImVec2 Size;
 		std::string State;
 		std::string SavedState;
-
-
 		Node() = default;
 		Node(int id, const char* name, ImColor color = ImColor(255, 255, 255)) :
 			ID(id), Name(name), Color(color), Type(NodeType::Blueprint), Size(0, 0)
 		{
 		}
-
-		void InstallUi()override {
-
-		}
-		void Init(std::unordered_map<size_t, Geomerty::NodeData>& registry)override {
-
-		}
-		void Execute(ExetContex* ctx, std::unordered_map<size_t, Geomerty::NodeData>& registry)override {
-
-
-		}
-		void Present(opengl::glfw::Viewer& viewer, std::unordered_map<size_t, Geomerty::NodeData>& registry)override {
-		}
+		void InstallUi()override {}
+		void Init(Graph* graph)override {}
+		void Execute(ExetContex* ctx)override {}
+		void Present(opengl::glfw::Viewer& viewer)override {}
 	};
 	struct Link
 	{

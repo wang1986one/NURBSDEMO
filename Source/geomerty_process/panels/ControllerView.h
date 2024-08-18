@@ -1,5 +1,5 @@
 #pragma once
-#include "../gl/Viewer.h"
+#include "glviewer/Viewer.h"
 #include<UI/Panels/AView.h>
 namespace Geomerty {
 	class ControllerView : public UI::Panels::AView

@@ -16,8 +16,8 @@
 #include"tools/SystemCallls.h"
 #include <tools/PathParser.h>
 #include <tools/String.h>
-#include "../ServiceLocator.h"
-#include "AssetBrowser.h"
+#include "core/ServiceLocator.h"
+#include "panels/AssetBrowser.h"
 #define FILENAMES_CHARS Geomerty::AssetBrowser::__FILENAMES_CHARS
 const std::string FILENAMES_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.-_=+ 0123456789()[]";
 void RenameAsset(const std::string& p_prev, const std::string& p_new)

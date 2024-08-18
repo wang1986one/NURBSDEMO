@@ -1,12 +1,10 @@
-#pragma once
-#include"nodes.h"
+#include "nodes/string_node.h"
+#include "core/ServiceLocator.h"
 #include <UI/Widgets/Layout/Group.h>
-
+#include "core/graph.h"
 namespace Geomerty {
-	class StringNode :public Node {
-	public:
-		StringNode(int id, const char* name, ImColor color = ImColor(255, 255, 255)) :Node(id, name, color) {}
-		void InstallUi()override {
+	
+		void StringNode::InstallUi() {
 			ImGui::InputText("Path", str.data(), 250);
 			if (ImGui::BeginDragDropTarget())
 			{
@@ -20,18 +18,15 @@ namespace Geomerty {
 				ImGui::EndDragDropTarget();
 			}
 		}
-		void Init(std::unordered_map<size_t, Geomerty::NodeData>& registry)override {
+		void StringNode::Init(Graph* graph) {
 			Outputs.emplace_back(GetNextId(), "Str", typeid(std::string).hash_code(), PinKind::Output);
 			Outputs.back().Node = this;
 			str.reserve(250);
-
-			registry[Outputs.back().index] = { &str, typeid(std::string).hash_code() };
+			graph->registry[Outputs.back().index] = { &str, typeid(std::string).hash_code() };
 		}
-		void Execute(ExetContex* ctx, std::unordered_map<size_t, Geomerty::NodeData>& registry)override {
-			registry[Outputs.back().index].Set<std::string>(&str);
+		void StringNode::Execute(ExetContex* ctx) {
+			ctx->graph->registry[Outputs.back().index].Set<std::string>(&str);
 
 		}
-		std::string  str;
-	};
 
 }

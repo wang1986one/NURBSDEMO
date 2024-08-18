@@ -1,5 +1,5 @@
-#include "read_mesh.h"
-#include "exceptions.h"
+#include "core/read_mesh.h"
+#include "core/exceptions.h"
 namespace Geomerty {
 
 	void read_obj(SurfaceMesh& mesh, const std::filesystem::path& file)

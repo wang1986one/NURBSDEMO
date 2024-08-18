@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-#include "mat_vec.h"
+#include "core/mat_vec.h"
 
 namespace Geomerty {
 

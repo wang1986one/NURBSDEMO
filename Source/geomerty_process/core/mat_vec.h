@@ -13,7 +13,7 @@
 #include <initializer_list>
 #include <numbers>
 #include <Eigen/Dense>
-#include "exceptions.h"
+#include "core/exceptions.h"
 
 namespace Geomerty {
 

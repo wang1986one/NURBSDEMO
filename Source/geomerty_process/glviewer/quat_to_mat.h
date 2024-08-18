@@ -1,6 +1,6 @@
 #pragma once
   /// Convert a quaternion to a 4x4 matrix
-  /// A Quaternion, q, is defined here as an arrays of four scalars (x,y,z,w),
+  /// A Quaternion, q, is defined here as an arrays of four floats (x,y,z,w),
   /// such that q = x*i + y*j + z*k + w
   ///
   /// @param[in] quat  pointer to four elements of quaternion (x,y,z,w)  

@@ -3,7 +3,7 @@
 #include <Eigen/Core>
  /// Act like matlab's [C,IA,IC] = unique(X,'rows')
   ///
-  /// @tparam  DerivedA derived scalar type, e.g. MatrixXi or MatrixXd
+  /// @tparam  DerivedA derived float type, e.g. MatrixXi or MatrixXd
   /// @tparam  DerivedIA derived integer type, e.g. MatrixXi
   /// @tparam  DerivedIC derived integer type, e.g. MatrixXi
   /// @param[in] A  m by n matrix whose entries are to unique'd according to rows

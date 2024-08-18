@@ -1,23 +1,17 @@
 #pragma once
-#include<vector>
+#include <vector>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
 namespace Geomerty
 {
-
 	using vec3 = Eigen::Vector3<float>;
 	using vec4 = Eigen::Vector4<float>;
-	const float N_SCALAR_EPSILON = 0.0001f;
+	const float N_SCALAR_EPSILON = 0.00001f;
 	namespace nurbs
 	{
 		namespace util
 		{
-			/**
-			 * Transpose a matirx resprented by std::vector<std::vector<T>>.
-			 * @param[in] matrix.
-			 * @param[in] transposed.
-			 */
 			template<typename T> inline void transpose(const std::vector<std::vector<T>>& matrix, std::vector<std::vector<T>>& transposed)
 			{
 				std::vector<T> temp;
@@ -32,12 +26,7 @@ namespace Geomerty
 					temp.clear();
 				}
 			}
-			/**
-			 * Get a column of  a matirx resprented by std::vector<std::vector<T>>.
-			 * @param[in] matrix.
-			 * @param[in] columnIndex.
-			 * return the column indexed by columnIndex.
-			 */
+
 			template<typename T> inline std::vector<T> get_column(const std::vector<std::vector<T>>& matrix, int columnIndex)
 			{
 				int size = matrix.size();
@@ -48,12 +37,7 @@ namespace Geomerty
 				}
 				return result;
 			}
-			/**
-			 * Get matirx of left multiply right resprented by std::vector<std::vector<float>>.
-			 * @param[in] left resprented by std::vector<std::vector<float>>.
-			 * @param[in] right resprented by std::vector<std::vector<float>>.
-			 * return the result matrix resprented by std::vector<std::vector<float>>.
-			 */
+
 			inline std::vector<std::vector<float>> matrix_multiply(std::vector<std::vector<float>>& left, std::vector<std::vector<float>>& right)
 			{
 				int m = left.size();
@@ -73,12 +57,7 @@ namespace Geomerty
 				}
 				return result;
 			}
-			/**
-			 * Solve AX=B resprented by std::vector<std::vector<float>>.
-			 * @param[in] matrix resprented by std::vector<std::vector<float>>.
-			 * @param[in] right resprented by std::vector<std::vector<float>>.
-			 * return the X matrix resprented by std::vector<std::vector<float>>.
-			 */
+
 			inline std::vector<std::vector<float>> solve_linear_system(const std::vector<std::vector<float>>& matrix,
 				const std::vector<std::vector<float>>& right)
 			{
@@ -107,11 +86,6 @@ namespace Geomerty
 				return result;
 			}
 
-			/**
-			 * Get the length of path consisting of a group of points
-			 * @param[in] through_points.
-			 * return the length of the path.
-			 */
 			inline float get_total_chord_length(const std::vector<vec3>& through_points)
 			{
 				int n = through_points.size();
@@ -122,11 +96,33 @@ namespace Geomerty
 				}
 				return length;
 			}
-			/**
-			 * Get the parameterization of a group of points
-			 * @param[in] through_points.
-			 * return the result of parameterization.
-			 */
+
+			inline std::vector<float> average_knot_vector(int degree, const std::vector<float>& params)
+			{
+
+				std::vector<float> uk = params;
+				int size = params.size();
+				int n = size - 1;
+				int m = n + degree + 1;
+
+				std::vector<float> knot_vector(m + 1, 0.0);
+				for (int i = m - degree; i <= m; i++)
+				{
+					knot_vector[i] = 1.0;
+				}
+
+				for (int j = 1; j <= n - degree; j++)
+				{
+					float sum = 0.0;
+					for (int i = j; i <= j + degree - 1; i++)
+					{
+						sum += uk[i];
+					}
+					knot_vector[j + degree] = (1.0 / degree) * sum;
+				}
+				return knot_vector;
+			}
+
 			inline std::vector<float> get_chord_parameterization(const std::vector<vec3>& through_points)
 			{
 				int size = through_points.size();
@@ -143,10 +139,6 @@ namespace Geomerty
 				return uk;
 			}
 
-			/**
-			 * Compute the binomial coefficient (nCk) using the formula
-			 * \product_{i=0}^k (n + 1 - i) / i
-			 */
 			inline size_t binomial(size_t n, size_t k)
 			{
 				size_t result = 1;
@@ -161,20 +153,9 @@ namespace Geomerty
 				}
 				return result;
 			}
-			/**
-			 * Convert a point in cartesian coordinates to an (n+1)d point in homogenous
-			 * coordinates
-			 * @param[in] pt Point in cartesian coordinates
-			 * @param[in] w Weight
-			 * @return Input point in homogenous coordinates
-			 */
+
 			inline vec4 cartesian_to_homogenous(const vec3& pt, float w) { return vec4(pt[0] * w, pt[1] * w, pt[2] * w, w); }
-			/**
-			 * Convert 2D list of points in cartesian coordinates to homogenous coordinates
-			 * @param[in] pts Points in cartesian coordinates
-			 * @param[in] ws Weights
-			 * @return Points in homogenous coordinates
-			 */
+
 			inline std::vector<std::vector<vec4>> cartesian_to_homogenous(const std::vector<std::vector<vec3>>& pts,
 				const std::vector<std::vector<float>>& ws)
 			{
@@ -189,20 +170,8 @@ namespace Geomerty
 				return Cw;
 			}
 
-			/**
-			 * Convert an nd point in homogenous coordinates to an (n-1)d point in cartesian
-			 * coordinates by perspective division
-			 * @param[in] pt Point in homogenous coordinates
-			 * @return Point in cartesian coordinates
-			 */
 			inline vec3 homogenous_to_cartesian(const vec4& pt) { return vec3(pt[0] / pt[3], pt[1] / pt[3], pt[2] / pt[3]); }
-			/**
-			 * Convert a list of nd points in homogenous coordinates to a list of (n-1)d points in cartesian
-			 * coordinates by perspective division
-			 * @param[in] ptsws Points in homogenous coordinates
-			 * @param[out] pts Points in cartesian coordinates
-			 * @param[out] ws Homogenous weights
-			 */
+
 
 			inline void homogenous_to_cartesian(const std::vector<vec4>& ptsws, std::vector<vec3>& pts, std::vector<float>& ws)
 			{
@@ -217,13 +186,7 @@ namespace Geomerty
 					ws.push_back(ptw_i[3]);
 				}
 			}
-			/**
-			 * Convert a 2D list of nd points in homogenous coordinates to cartesian
-			 * coordinates by perspective division
-			 * @param[in] ptsws Points in homogenous coordinates
-			 * @param[out] pts Points in cartesian coordinates
-			 * @param[out] ws Homogenous weights
-			 */
+
 			inline void homogenous_to_cartesian(const std::vector<std::vector<vec4>>& ptsws, std::vector<std::vector<vec3>>& pts,
 				std::vector<std::vector<float>>& ws)
 			{
@@ -241,21 +204,21 @@ namespace Geomerty
 				}
 			}
 
-			/**
-			 * Check if two numbers are close enough within eps
-			 * @param[in] a First number
-			 * @param[in] b Second number
-			 * @return Whether the numbers are close w.r.t. the tolerance
-			 */
+
 			inline bool close(float a, float b) { return (abs(a - b) < N_SCALAR_EPSILON) ? true : false; }
 			inline bool close(vec3 a, vec3 b) { return close(a[0], b[0]) && close(a[1], b[1]) && close(a[2], b[2]); }
-			/**
-			 * Returns the multiplicity of the knot at index
-			 * @tparam Type of knot values
-			 * @param[in] knots Knot vector
-			 * @param[in] knot_val Knot of interest
-			 * @return Multiplicity (>= 0)
-			 */
+
+			inline bool is_almost_equal(float a, float b)
+			{
+
+				float eps = (abs(a) + std::abs(b) + 10) * N_SCALAR_EPSILON;
+				float delta = a - b;
+				return (-eps < delta) && (eps > delta);
+			}
+			inline bool is_almost_equal(vec3 a, vec3 b)
+			{
+				return is_almost_equal(a[0], b[0]) && is_almost_equal(a[1], b[1]) && is_almost_equal(a[2], b[2]);
+			}
 			inline size_t knot_multiplicity(const std::vector<float>& knots, float knot_val)
 			{
 
@@ -269,13 +232,7 @@ namespace Geomerty
 				}
 				return mult;
 			}
-			/**
-			 * Find the span of the given parameter in the knot vector.
-			 * @param[in] degree Degree of the curve.
-			 * @param[in] knots Knot vector of the curve.
-			 * @param[in] u Parameter value.
-			 * @return Span index into the knot vector such that (span - 1) < u <= span
-			 */
+
 			inline int find_span(size_t degree, const std::vector<float>& knots, float u)
 			{
 				// index of last control point
@@ -312,14 +269,6 @@ namespace Geomerty
 				return mid;
 			}
 
-			/**
-			 * Compute a single B-spline basis function
-			 * @param[in] i The ith basis function to compute.
-			 * @param[in] deg Degree of the basis function.
-			 * @param[in] knots Knot vector corresponding to the basis functions.
-			 * @param[in] u Parameter to evaluate the basis functions at.
-			 * @return The value of the ith basis function at u.
-			 */
 			inline float bspline_one_basis(int i, size_t deg, const std::vector<float>& U, float u)
 			{
 				int m = static_cast<int>(U.size()) - 1;
@@ -364,14 +313,6 @@ namespace Geomerty
 				return N[0];
 			}
 
-			/**
-			 * Compute all non-zero B-spline basis functions
-			 * @param[in] deg Degree of the basis function.
-			 * @param[in] span Index obtained from findSpan() corresponding the u and knots.
-			 * @param[in] knots Knot vector corresponding to the basis functions.
-			 * @param[in] u Parameter to evaluate the basis functions at.
-			 * @return N Values of (deg+1) non-zero basis functions.
-			 */
 			inline std::vector<float> bspline_basis(size_t deg, int span, const std::vector<float>& knots, float u)
 			{
 				std::vector<float> N;
@@ -399,15 +340,6 @@ namespace Geomerty
 				return N;
 			}
 
-			/**
-			 * Compute all non-zero derivatives of B-spline basis functions
-			 * @param[in] deg Degree of the basis function.
-			 * @param[in] span Index obtained from findSpan() corresponding the u and knots.
-			 * @param[in] knots Knot vector corresponding to the basis functions.
-			 * @param[in] u Parameter to evaluate the basis functions at.
-			 * @param[in] num_ders Number of derivatives to compute (num_ders <= deg)
-			 * @return ders Values of non-zero derivatives of basis functions.
-			 */
 			inline std::vector<std::vector<float>> bspline_der_basis(size_t deg, int span, const std::vector<float>& knots, float u, int num_ders)
 			{
 				std::vector<float> left, right;

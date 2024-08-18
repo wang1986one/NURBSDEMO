@@ -7,13 +7,9 @@
 #include "backends/imgui_impl_opengl3.h"
 #include "ImGuizmo.h"
 #include "core/nodes.h"
-#include "nodes/string_node.h"
-#include "nodes/readmesh_node.h"
-#include "nodes/smoothmesh_node.h"
-
 
 namespace Geomerty {
-	
+
 	namespace ed = ax::NodeEditor;
 	class Graph {
 	public:
@@ -32,33 +28,19 @@ namespace Geomerty {
 			return ed::LinkId(Geomerty::GetNextId());
 		}
 		Geomerty::Node* FindNode(ed::NodeId id);
-		
+
 		Geomerty::Link* FindLink(ed::LinkId id);
 		Geomerty::Pin* FindPin(ed::PinId id);
-	
+
 		bool IsPinLinked(ed::PinId id);
 		Geomerty::Pin* FindConnectedStartPin(ed::PinId id);
 		bool CanCreateLink(Geomerty::Pin* a, Geomerty::Pin* b);
-		
+
 		bool GetNodeETX(Geomerty::Node* n, Geomerty::ExetContex& ctx);
-		Geomerty::Node* SpawnStringNode()
-		{
-			m_Nodes.push_back(new Geomerty::StringNode(Geomerty::GetNextId(), "StringNode", ImColor(255, 255, 128)));
-			m_Nodes.back()->Init(this);
-			return m_Nodes.back();
-		}
-		Geomerty::Node* SpawnRead_MeshNode()
-		{
-			m_Nodes.push_back(new Geomerty::Read_MeshNode(Geomerty::GetNextId(), "Read_MeshNode"));
-			m_Nodes.back()->Init(this);
-			return m_Nodes.back();
-		}
-		Geomerty::Node* SpawnSmoothMesh_Node()
-		{
-			m_Nodes.push_back(new Geomerty::Smooth_MeshNode(Geomerty::GetNextId(), "Smooth_MeshNode"));
-			m_Nodes.back()->Init(this);
-			return m_Nodes.back();
-		}
+		Geomerty::Node* SpawnStringNode();
+		Geomerty::Node* SpawnRead_MeshNode();
+		Geomerty::Node* SpawnSmoothMesh_Node();
+		Geomerty::Node* SpawnSpape_Node();
 		int GetSelectNode();
 		void OnStart() {
 
@@ -68,6 +50,7 @@ namespace Geomerty {
 			node = SpawnStringNode(); ed::SetNodePosition(node->ID, ImVec2(-252, 220));
 			node = SpawnRead_MeshNode(); ed::SetNodePosition(node->ID, ImVec2(-300, 351));
 			node = SpawnSmoothMesh_Node(); ed::SetNodePosition(node->ID, ImVec2(-350, 351));
+			node = SpawnSpape_Node(); ed::SetNodePosition(node->ID, ImVec2(-350, 351));
 			ed::NavigateToContent();
 		}
 		void OnStop()

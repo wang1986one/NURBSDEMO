@@ -1,7 +1,7 @@
 #pragma once
 
   /// Computes out = q1 * q2 with quaternion multiplication
-  /// A Quaternion, q, is defined here as an arrays of four scalars (x,y,z,w),
+  /// A Quaternion, q, is defined here as an arrays of four floats (x,y,z,w),
   /// such that q = x*i + y*j + z*k + w
   ///
   /// @param[in] q1  left quaternion

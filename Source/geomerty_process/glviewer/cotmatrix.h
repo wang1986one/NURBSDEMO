@@ -17,7 +17,7 @@
   ///     MatrixXd)
   ///   @tparam DerivedF  derived type of eigen matrix for F (e.g. derived from
   ///     MatrixXi)
-  ///   @tparam Scalar  scalar type for eigen sparse matrix (e.g. double)
+  ///   @tparam Scalar  float type for eigen sparse matrix (e.g. double)
   ///   @param[in] V  #V by dim list of mesh vertex positions
   ///   @param[in] F  #F by simplex_size list of mesh elements (triangles or tetrahedra)
   ///   @param[out] L  #V by #V cotangent matrix, each row i corresponding to V(i,:)

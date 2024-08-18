@@ -17,17 +17,90 @@ namespace Geomerty
 		namespace util
 		{
 
-			/**
-			 * Evaluate point on a nonrational NURBS surface
-			 * @param[in] degree_u Degree of the given surface in u-direction.
-			 * @param[in] degree_v Degree of the given surface in v-direction.
-			 * @param[in] knots_u Knot vector of the surface in u-direction.
-			 * @param[in] knots_v Knot vector of the surface in v-direction.
-			 * @param[in] control_points Control points of the surface in a 2d array.
-			 * @param[in] u Parameter to evaluate the surface at.
-			 * @param[in] v Parameter to evaluate the surface at.
-			 * @return point Resulting point on the surface at (u, v).
-			 */
+			inline bool get_surfacemesh_parameterization(const std::vector<std::vector<vec3>>& throughpoints, std::vector<float>& params_u,
+				std::vector<float>& params_v)
+			{
+				int n = throughpoints.size();
+				int m = throughpoints[0].size();
+
+				std::vector<float> cds(std::max(n, m), 0.0);
+				params_u.resize(n, 0.0);
+				params_v.resize(m, 0.0);
+
+				int num = m;
+
+				for (int l = 0; l < m; l++)
+				{
+					float total = 0.0;
+					for (int k = 1; k < n; k++)
+					{
+						cds[k] = (throughpoints[k][l] - throughpoints[k - 1][l]).norm();
+						total += cds[k];
+					}
+
+					if (is_almost_equal(total, 0.0))
+					{
+						num--;
+					}
+					else
+					{
+						float d = 0.0;
+						for (int k = 1; k < n; k++)
+						{
+							d += cds[k];
+							params_u[k] = params_u[k] + d / total;
+						}
+					}
+				}
+				if (num == 0)
+				{
+					return false;
+				}
+
+				for (int k = 1; k < n - 1; k++)
+				{
+					params_u[k] = params_u[k] / num;
+				}
+				params_u[n - 1] = 1.0;
+
+				num = n;
+
+				for (int k = 0; k < n; k++)
+				{
+					float total = 0.0;
+					for (int l = 1; l < m; l++)
+					{
+						cds[l] = (throughpoints[k][l] - throughpoints[k][l - 1]).norm();
+						total += cds[l];
+					}
+					if (is_almost_equal(total, 0.0))
+					{
+						num--;
+					}
+					else
+					{
+						float d = 0.0;
+						for (int l = 1; l < m; l++)
+						{
+							d += cds[l];
+							params_v[l] += d / total;
+						}
+					}
+				}
+
+				if (num == 0)
+				{
+					return false;
+				}
+				for (int l = 1; l < m - 1; l++)
+				{
+					params_v[l] = params_v[l] / num;
+				}
+				params_v[m - 1] = 1.0;
+
+				return true;
+			}
+
 
 			inline vec3 surface_point(size_t degree_u, size_t degree_v, const std::vector<float>& knots_u, const std::vector<float>& knots_v,
 				const std::vector<std::vector<vec3>>& control_points, float u, float v)
@@ -81,18 +154,6 @@ namespace Geomerty
 				return point;
 			}
 
-			/**
-			 * Evaluate derivatives on a non-rational NURBS surface
-			 * @param[in] degree_u Degree of the given surface in u-direction.
-			 * @param[in] degree_v Degree of the given surface in v-direction.
-			 * @param[in] knots_u Knot vector of the surface in u-direction.
-			 * @param[in] knots_v Knot vector of the surface in v-direction.
-			 * @param[in] control_points Control points of the surface in a 2D array.
-			 * @param[in] num_ders Number of times to differentiate
-			 * @param[in] u Parameter to evaluate the surface at.
-			 * @param[in] v Parameter to evaluate the surface at.
-			 * @param[out] surf_ders Derivatives of the surface at (u, v).
-			 */
 			inline std::vector<std::vector<vec3>> surface_derivatives(size_t degree_u, size_t degree_v, const std::vector<float>& knots_u,
 				const std::vector<float>& knots_v,
 				const std::vector<std::vector<vec3>>& control_points, size_t num_ders, float u,
@@ -109,7 +170,6 @@ namespace Geomerty
 						surf_ders[k][1] = vec3::Zero();
 					}
 				}
-
 				// Find span and basis function derivatives
 				float span_u = find_span(degree_u, knots_u, u);
 				float span_v = find_span(degree_v, knots_v, v);
@@ -202,25 +262,13 @@ namespace Geomerty
 				}
 				return surf_ders;
 			}
-			/**
-			 * Evaluate point on a nonrational NURBS surface
-			 * @param[in] srf Surface object
-			 * @param[in] u Parameter to evaluate the surface at.
-			 * @param[in] v Parameter to evaluate the surface at.
-			 * @return Resulting point on the surface at (u, v).
-			 */
+
 			inline vec3 surface_point(const Surface& srf, float u, float v)
 			{
 				return surface_point(srf.m_degree_u, srf.m_degree_v, srf.m_knots_u, srf.m_knots_v, srf.m_control_points, u, v);
 			}
 
-			/**
-			 * Evaluate point on a non-rational NURBS surface
-			 * @param[in] srf RationalSurface object
-			 * @param[in] u Parameter to evaluate the surface at.
-			 * @param[in] v Parameter to evaluate the surface at.
-			 * @return Resulting point on the surface at (u, v).
-			 */
+
 			inline vec3 surface_point(const RationalSurface& srf, float u, float v)
 			{
 				// Compute homogenous coordinates of control points
@@ -242,31 +290,12 @@ namespace Geomerty
 				return vec3(pointw.x() / pointw.w(), pointw.y() / pointw.w(), pointw.z() / pointw.w());
 			}
 
-			/**
-			 * Evaluate derivatives on a non-rational NURBS surface
-			 * @param[in] degree_u Degree of the given surface in u-direction.
-			 * @param[in] degree_v Degree of the given surface in v-direction.
-			 * @param[in] knots_u Knot vector of the surface in u-direction.
-			 * @param[in] knots_v Knot vector of the surface in v-direction.
-			 * @param[in] control_points Control points of the surface in a 2D array.
-			 * @param[in] num_ders Number of times to differentiate
-			 * @param[in] u Parameter to evaluate the surface at.
-			 * @param[in] v Parameter to evaluate the surface at.
-			 * @return surf_ders Derivatives of the surface at (u, v).
-			 */
+
 			inline std::vector<std::vector<vec3>> surface_derivatives(const Surface& srf, int num_ders, float u, float v)
 			{
 				return surface_derivatives(srf.m_degree_u, srf.m_degree_v, srf.m_knots_u, srf.m_knots_v, srf.m_control_points, num_ders, u, v);
 			}
 
-			/**
-			 * Evaluate derivatives on a rational NURBS surface
-			 * @param[in] srf RationalSurface object
-			 * @param[in] u Parameter to evaluate the surface at.
-			 * @param[in] v Parameter to evaluate the surface at.
-			 * @param[in] num_ders Number of times to differentiate
-			 * @return Derivatives on the surface at parameter (u, v).
-			 */
 			inline std::vector<std::vector<vec3>> surface_derivatives(const RationalSurface& srf, int num_ders, float u, float v)
 			{
 
@@ -326,14 +355,7 @@ namespace Geomerty
 				return surf_ders;
 			}
 
-			/**
-			 * Evaluate the two orthogonal tangents of a non-rational surface at the given
-			 * parameters
-			 * @param[in] srf Surface object
-			 * @param u Parameter in the u-direction
-			 * @param v Parameter in the v-direction
-			 * @return std::tuple with unit tangents along u- and v-directions
-			 */
+
 			inline std::tuple<vec3, vec3> surface_tangent(const Surface& srf, float u, float v)
 			{
 				std::vector<std::vector<vec3>> ptder = surface_derivatives(srf, 1, u, v);
@@ -353,14 +375,6 @@ namespace Geomerty
 				return std::tuple<vec3, vec3>(std::move(du), std::move(dv));
 			}
 
-			/**
-			 * Evaluate the two orthogonal tangents of a rational surface at the given
-			 * parameters
-			 * @param[in] srf Rational Surface object
-			 * @param u Parameter in the u-direction
-			 * @param v Parameter in the v-direction
-			 * @return std::tuple with unit tangents along u- and v-directions
-			 */
 			inline std::tuple<vec3, vec3> surface_tangent(const RationalSurface& srf, float u, float v)
 			{
 				std::vector<std::vector<vec3>> ptder = surface_derivatives(srf, 1, u, v);
@@ -380,13 +394,7 @@ namespace Geomerty
 				return std::tuple<vec3, vec3>(du, dv);
 			}
 
-			/**
-			 * Evaluate the normal a non-rational surface at the given parameters
-			 * @param[in] srf Surface object
-			 * @param u Parameter in the u-direction
-			 * @param v Parameter in the v-direction
-			 * @param[inout] normal Unit normal at of the surface at (u, v)
-			 */
+
 			inline vec3 surface_normal(const Surface& srf, float u, float v)
 			{
 				std::vector<std::vector<vec3>> ptder = surface_derivatives(srf, 1, u, v);
@@ -399,13 +407,6 @@ namespace Geomerty
 				return n;
 			}
 
-			/**
-			 * Evaluate the normal of a rational surface at the given parameters
-			 * @param[in] srf Rational Surface object
-			 * @param u Parameter in the u-direction
-			 * @param v Parameter in the v-direction
-			 * @return Unit normal at of the surface at (u, v)
-			 */
 			inline vec3 surface_normal(const RationalSurface& srf, float u, float v)
 			{
 				std::vector<std::vector<vec3>> ptder = surface_derivatives(srf, 1, u, v);
@@ -417,17 +418,7 @@ namespace Geomerty
 				}
 				return n;
 			}
-			/**
-			 * Insert knots in the surface along one direction
-			 * @param[in] degree Degree of the surface along which to insert knot
-			 * @param[in] knots Knot vector
-			 * @param[in] cp 2D array of control points
-			 * @param[in] knot Knot value to insert
-			 * @param[in] r Number of times to insert
-			 * @param[in] along_u Whether inserting along u-direction
-			 * @param[out] new_knots Updated knot vector
-			 * @param[out] new_cp Updated control points
-			 */
+
 			inline void surface_knot_insert(size_t degree, const std::vector<float>& knots, const std::vector<std::vector<vec3>>& cp, float knot, size_t r,
 				bool along_u, std::vector<float>& new_knots, std::vector<std::vector<vec3>>& new_cp)
 			{
@@ -690,18 +681,7 @@ namespace Geomerty
 					}
 				}
 			}
-			/**
-			 * Split the surface into two along given parameter direction
-			 * @param[in] degree Degree of surface along given direction
-			 * @param[in] knots Knot vector of surface along given direction
-			 * @param[in] control_points std::vector of control points
-			 * @param[in] param Parameter to split curve
-			 * @param[in] along_u Whether the direction to split along is the u-direction
-			 * @param[out] left_knots Knots of the left part of the curve
-			 * @param[out] left_control_points Control points of the left part of the curve
-			 * @param[out] right_knots Knots of the right part of the curve
-			 * @param[out] right_control_points Control points of the right part of the curve
-			 */
+
 			inline void surface_split(size_t degree, const std::vector<float>& knots, const std::vector<std::vector<vec3>>& control_points, float param,
 				bool along_u, std::vector<float>& left_knots, std::vector<std::vector<vec3>>& left_control_points,
 				std::vector<float>& right_knots, std::vector<std::vector<vec3>>& right_control_points)
@@ -858,13 +838,7 @@ namespace Geomerty
 					}
 				}
 			}
-			/**
-			 * Insert knots in the surface along u-direction
-			 * @param[in] srf Surface object
-			 * @param[in] u Knot value to insert
-			 * @param[in] repeat Number of times to insert
-			 * @return New Surface object after knot insertion
-			 */
+
 			inline Surface surface_knot_insert_u(const Surface& srf, float u, size_t repeat = 1)
 			{
 				Surface new_srf;
@@ -874,13 +848,7 @@ namespace Geomerty
 				surface_knot_insert(new_srf.m_degree_u, srf.m_knots_u, srf.m_control_points, u, repeat, true, new_srf.m_knots_u, new_srf.m_control_points);
 				return new_srf;
 			}
-			/**
-			 * Insert knots in the rational surface along u-direction
-			 * @param[in] srf RationalSurface object
-			 * @param[in] u Knot value to insert
-			 * @param[in] repeat Number of times to insert
-			 * @return New RationalSurface object after knot insertion
-			 */
+
 			inline RationalSurface surface_knot_insert_u(const RationalSurface& srf, float u, size_t repeat = 1)
 			{
 				RationalSurface new_srf;
@@ -917,13 +885,7 @@ namespace Geomerty
 				}
 				return new_srf;
 			}
-			/**
-			 * Insert knots in the surface along v-direction
-			 * @param[in] srf Surface object
-			 * @param[in] v Knot value to insert
-			 * @param[in] repeat Number of times to insert
-			 * @return New Surface object after knot insertion
-			 */
+
 			inline Surface surface_knot_insert_v(const Surface& srf, float v, size_t repeat = 1)
 			{
 				Surface new_srf;
@@ -935,13 +897,6 @@ namespace Geomerty
 				return new_srf;
 			}
 
-			/**
-			 * Insert knots in the rational surface along v-direction
-			 * @param[in] srf RationalSurface object
-			 * @param[in] v Knot value to insert
-			 * @param[in] repeat Number of times to insert
-			 * @return New RationalSurface object after knot insertion
-			 */
 			inline RationalSurface surface_knot_insert_v(const RationalSurface& srf, float v, size_t repeat = 1)
 			{
 				RationalSurface new_srf;
@@ -977,12 +932,7 @@ namespace Geomerty
 				}
 				return new_srf;
 			}
-			/**
-			 * Split a surface into two along u-direction
-			 * @param[in] srf Surface object
-			 * @param[in] u Parameter along u-direction to split the surface
-			 * @return std::tuple with first and second half of the surfaces
-			 */
+
 			inline std::tuple<Surface, Surface> surface_split_u(const Surface& srf, float u)
 			{
 				Surface left, right;
@@ -997,12 +947,6 @@ namespace Geomerty
 				return std::tuple<Surface, Surface>(std::move(left), std::move(right));
 			}
 
-			/**
-			 * Split a rational surface into two along u-direction
-			 * @param[in] srf RationalSurface object
-			 * @param[in] u Parameter along u-direction to split the surface
-			 * @return std::tuple with first and second half of the surfaces
-			 */
 			inline std::tuple<RationalSurface, RationalSurface> surface_split_u(const RationalSurface& srf, float u)
 			{
 				RationalSurface left, right;
@@ -1031,12 +975,6 @@ namespace Geomerty
 				return std::tuple<RationalSurface, RationalSurface>(std::move(left), std::move(right));
 			}
 
-			/**
-			 * Split a surface into two along v-direction
-			 * @param[in] srf Surface object
-			 * @param[in] v Parameter along v-direction to split the surface
-			 * @return std::tuple with first and second half of the surfaces
-			 */
 			inline std::tuple<Surface, Surface> surface_split_v(const Surface& srf, float v)
 			{
 				Surface left, right;
@@ -1051,12 +989,6 @@ namespace Geomerty
 				return std::tuple<Surface, Surface>(std::move(left), std::move(right));
 			}
 
-			/**
-			 * Split a rational surface into two along v-direction
-			 * @param[in] srf RationalSurface object
-			 * @param[in] v Parameter along v-direction to split the surface
-			 * @return std::tuple with first and second half of the surfaces
-			 */
 			inline std::tuple<RationalSurface, RationalSurface> surface_split_v(const RationalSurface& srf, float v)
 			{
 				RationalSurface left, right;
@@ -1081,15 +1013,6 @@ namespace Geomerty
 				return std::tuple<RationalSurface, RationalSurface>(std::move(left), std::move(right));
 			}
 
-			/**
-			 * Approximate a group of points with nubrs
-			 * @param[in] through_points a group of points
-			 * @param degree_u degree Parameter in the u-direction
-			 * @param degree_v degree Parameter in the v-direction
-			 * @param control_points_rows rows in the u-direction
-			 * @param control_points_columns cols in the v-direction
-			 * @param[out] surface RationalSurface
-			 */
 			inline bool global_approximation(const std::vector<std::vector<vec3>>& through_points, int degree_u, int degree_v,
 				int control_points_rows, int control_points_columns, RationalSurface& surface)
 			{
@@ -1135,6 +1058,58 @@ namespace Geomerty
 				surface.m_control_points = control_points;
 				surface.m_weights = std::vector<std::vector<float>>(control_points.size(), std::vector<float>(control_points[0].size(), 1.0f));
 				return true;
+			}
+			inline void global_interpolation(const std::vector<std::vector<vec3>>& throughpoints, int degreeU, int degreeV, RationalSurface& surface)
+			{
+
+				std::vector<float> uk;
+				std::vector<float> vl;
+
+				get_surfacemesh_parameterization(throughpoints, uk, vl);
+
+				int rows = throughpoints.size();
+				int cols = throughpoints[0].size();
+
+				std::vector<std::vector<vec3>> controlpoints(rows, std::vector<vec3>(cols));
+				std::vector<std::vector<float>> weights(rows, std::vector<float>(cols, 1.0f));
+				std::vector<float> knotVectorU = average_knot_vector(degreeU, uk);
+				std::vector<float> knotVectorV = average_knot_vector(degreeV, vl);
+
+				for (int j = 0; j < cols; j++)
+				{
+					std::vector<vec3> temp(rows);
+					for (int i = 0; i < rows; i++)
+					{
+						temp[i] = throughpoints[i][j];
+					}
+					RationalCurve tc;
+					global_interpolation(degreeU, temp, tc);
+					for (int i = 0; i < rows; i++)
+					{
+						controlpoints[i][j] = tc.m_control_points[i];
+					}
+				}
+
+				for (int i = 0; i < rows; i++)
+				{
+					std::vector<vec3> temp(cols);
+					for (int j = 0; j < cols; j++)
+					{
+						temp[j] = throughpoints[i][j];
+					}
+					RationalCurve tc;
+					global_interpolation(degreeV, temp, tc);
+					for (int j = 0; j < cols; j++)
+					{
+						controlpoints[i][j] = tc.m_control_points[j];
+					}
+				}
+				surface.m_degree_u = degreeU;
+				surface.m_degree_v = degreeV;
+				surface.m_knots_u = knotVectorU;
+				surface.m_knots_v = knotVectorV;
+				surface.m_control_points = controlpoints;
+				surface.m_weights = weights;
 			}
 
 		}// namespace util

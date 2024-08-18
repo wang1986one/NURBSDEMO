@@ -1,5 +1,8 @@
 #include"graph.h"
-
+#include "nodes/string_node.h"
+#include "nodes/readmesh_node.h"
+#include "nodes/smoothmesh_node.h"
+#include "nodes/shapes_node.h"
 void DrawIcon(ImDrawList* drawList, const ImVec2& a, const ImVec2& b, bool filled, ImU32 color, ImU32 innerColor)
 {
 	auto rect = ImRect(a, b);
@@ -426,6 +429,8 @@ namespace Geomerty {
 				node = SpawnRead_MeshNode();
 			if (ImGui::MenuItem("SmoothMesh"))
 				node = SpawnSmoothMesh_Node();
+			if (ImGui::MenuItem("ShapeMesh"))
+				node = SpawnSpape_Node();
 			if (node)
 			{
 				createNewNode = false;
@@ -463,7 +468,7 @@ namespace Geomerty {
 	}
 	bool Graph::GetNodeETX(Geomerty::Node* n, Geomerty::ExetContex& ctx)
 	{
-	
+
 		bool link_all = true;
 		std::vector<Geomerty::NodeData*>data_arr;
 		for (auto in_put : n->Inputs) {
@@ -491,5 +496,29 @@ namespace Geomerty {
 				break;
 			}
 		}
+	}
+	Geomerty::Node* Graph::SpawnStringNode()
+	{
+		m_Nodes.push_back(new Geomerty::StringNode(Geomerty::GetNextId(), "StringNode", ImColor(255, 255, 128)));
+		m_Nodes.back()->Init(this);
+		return m_Nodes.back();
+	}
+	Geomerty::Node* Graph::SpawnRead_MeshNode()
+	{
+		m_Nodes.push_back(new Geomerty::Read_MeshNode(Geomerty::GetNextId(), "Read_MeshNode"));
+		m_Nodes.back()->Init(this);
+		return m_Nodes.back();
+	}
+	Geomerty::Node* Graph::SpawnSmoothMesh_Node()
+	{
+		m_Nodes.push_back(new Geomerty::Smooth_MeshNode(Geomerty::GetNextId(), "Smooth_MeshNode"));
+		m_Nodes.back()->Init(this);
+		return m_Nodes.back();
+	}
+	Geomerty::Node* Graph::SpawnSpape_Node()
+	{
+		m_Nodes.push_back(new Geomerty::ShapeNode(Geomerty::GetNextId(), "Shape_MeshNode"));
+		m_Nodes.back()->Init(this);
+		return m_Nodes.back();
 	}
 }

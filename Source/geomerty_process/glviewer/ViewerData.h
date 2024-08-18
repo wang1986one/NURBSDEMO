@@ -95,11 +95,11 @@ public:
     const Eigen::Matrix<unsigned char,Eigen::Dynamic,Eigen::Dynamic>& G,
     const Eigen::Matrix<unsigned char,Eigen::Dynamic,Eigen::Dynamic>& B);
 
-  /// Set pseudo-color-able scalar data associated with the mesh.
+  /// Set pseudo-color-able float data associated with the mesh.
   ///
   /// @param[in] caxis_min  caxis minimum bound
   /// @param[in] caxis_max  caxis maximum bound
-  /// @param[in] D  #V|#F by 1 list of scalar values
+  /// @param[in] D  #V|#F by 1 list of float values
   /// @param[in] cmap colormap type
   /// @param[in] num_steps number of intervals to discretize the colormap
    void set_data(
@@ -116,7 +116,7 @@ public:
     int num_steps = 21);
 
   /// Not to be confused with set_colors, this creates a _texture_ that will be
-  /// referenced to pseudocolor according to the scalar field passed to set_data.
+  /// referenced to pseudocolor according to the float field passed to set_data.
   ///
   /// @param[in] CM  #CM by 3 list of colors
    void set_colormap(const Eigen::MatrixXd & CM);

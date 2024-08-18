@@ -58,7 +58,7 @@ int main()
 	Geomerty::ServiceLocator::Provide<UI::Panels::PanelsManager>(*m_panelsManager);
 	m_panelsManager->CreatePanel<UI::Panels::MenuBar>("Menu Bar");
 	m_panelsManager->CreatePanel<Geomerty::ControllerView>("Scene View", true, settings);
-	m_panelsManager->CreatePanel<Geomerty::AssetBrowser>("Asset Browser", true, settings,"Res\\");
+	m_panelsManager->CreatePanel<Geomerty::AssetBrowser>("Asset Browser", true, settings, "Res\\");
 	m_canvas.MakeDockspace(true);
 	uiManager->SetCanvas(m_canvas);
 	glEnable(GL_DEPTH_TEST);
@@ -98,11 +98,12 @@ int main()
 			}
 		}
 		ImGui::End();
+		//ImGui::ShowDemoWindow();
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 		window->SwapBuffers();
 		inputManager->ClearEvents();
-		
+
 	}
 	//回收资源
 	device.reset();

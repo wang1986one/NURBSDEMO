@@ -115,3 +115,19 @@ void Triangulation::triangulate(Face f)
 
 ```
 
+##### Smooth
+
+算mesh拉普拉斯算子，对mesh坐标进行偏移，达到光滑的效果。
+
+分为explicit_smoothing和implicit_smoothing两种。
+
+在explicit_smoothing中：利用laplace矩阵得到偏移量，然后偏移坐标，可迭代多次。
+
+![image-20240820235550333](Geomerty.assets/image-20240820235550333.png)
+
+在implicit_smoothing中：通过构造smooth后坐标矩阵的隐式方程，然后求解线性系统，得到smooth结果
+
+![image-20240820235904097](Geomerty.assets/image-20240820235904097.png)
+
+
+

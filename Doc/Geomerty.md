@@ -131,3 +131,74 @@ void Triangulation::triangulate(Face f)
 
 
 
+#### Nurbs
+
+##### average_knot_vector
+
+给出一堆离散点（通常遍布了nurbs curve）的参数，根据阶数生成，采用平均的方式生成节向量。
+
+- 首尾degree+1个节元素为0或1
+- 中间的节元素，为degree长度的区间上参数求平均。
+
+![image-20240821165112733](./Geomerty.assets/image-20240821165112733.png)
+
+##### bspline_one_basis
+
+B样条基函数的计算：
+
+![img](./Geomerty.assets/1d0804b98238e599b281f4b42fc53417.jpeg)
+
+采用递归的方式计算复杂度较高，可采用迭代的方式计算,在迭代方式计算中采用动态规划的方式。
+
+1. 先把第0阶的基函数算出来，然后也一直向前递推到计算到d阶基函数。
+2. 最开始需要i到i+1+d对应顶点的0阶基函数
+3. 然后高阶利用低阶的结果计算
+
+![image-20240821184057887](./Geomerty.assets/image-20240821184057887.png)
+
+```c++
+inline scalar bspline_one_basis(int32 i, size_t deg, const Array<scalar>& U, scalar u)
+{
+    int32 m = static_cast<int32>(U.size()) - 1;
+    // Special case
+    if((i == 0 && close(u, U[0])) || (i == m - deg - 1 && close(u, U[m])))
+    {
+        return 1.0;
+    }
+    // Local property ensures that basis function is zero outside span
+    if(u < U[i] || u >= U[i + deg + 1])
+    {
+        return 0.0;
+    }
+    // Initialize zeroth-degree functions
+    Array<scalar> N;
+    N.resize(deg + 1);
+    for(auto j: IndexRange(deg + 1))
+    {
+        N[j] = (u >= U[i + j] && u < U[i + j + 1]) ? 1.0 : 0.0;
+    }
+    // Compute triangular table
+    for(auto k: IndexRange<size_t>(1, deg + 1))
+    {
+        scalar saved = (close(N[0], 0.0)) ? 0.0 : ((u - U[i]) * N[0]) / (U[i + k] - U[i]);
+        for(auto j: IndexRange(deg - k + 1))
+        {
+            scalar Uleft = U[i + j + 1];
+            scalar Uright = U[i + j + k + 1];
+            if(close(N[j + 1], 0.0))
+            {
+                N[j] = saved;
+                saved = 0.0;
+            }
+            else
+            {
+                scalar temp = N[j + 1] / (Uright - Uleft);
+                N[j] = saved + (Uright - u) * temp;
+                saved = (u - Uleft) * temp;
+            }
+        }
+    }
+    return N[0];
+}
+```
+

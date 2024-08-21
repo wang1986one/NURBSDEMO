@@ -7,9 +7,15 @@
 #include"algorithm/mesh_triangulate.h"
 namespace Geomerty {
 	void Smooth_MeshNode::InstallUi() {
+		const char* items[] = { "Explicit_smoothing", "Implicit_smoothing" };
+		ImGui::Combo("Method", &smooth_method, items, 2);
 		bool flag = false;
 		flag |= ImGui::Checkbox("Use Uniform lapace", &use_uniform);
 		flag |= ImGui::SliderInt("Iterations", &iterations, 1, 10);
+		if (smooth_method == 1) {
+			flag |= ImGui::SliderFloat("Time_step", &time_step, 0.001f, 0.01f);
+			flag |= ImGui::Checkbox("Rescale", &rescale);
+		}
 		if (flag) {
 			auto& input_manager = Geomerty::ServiceLocator::Get<UI::Panels::PanelsManager>();
 			auto& graph = Geomerty::ServiceLocator::Get<Geomerty::Graph>();
@@ -22,7 +28,6 @@ namespace Geomerty {
 		}
 	}
 	void Smooth_MeshNode::Init(Graph* graph) {
-
 		Inputs.emplace_back(GetNextId(), "InputMesh", typeid(SurfaceMesh).hash_code(), PinKind::Input);
 		Inputs.back().Node = this;
 		Outputs.emplace_back(GetNextId(), "OutputMesh", typeid(SurfaceMesh).hash_code(), PinKind::Output);
@@ -33,7 +38,12 @@ namespace Geomerty {
 		auto InputMesh = ctx->inputs[0]->Get<SurfaceMesh>();
 		if (InputMesh) {
 			SurfaceMesh* mesh = new SurfaceMesh(*InputMesh);
-			explicit_smoothing(*mesh, iterations, use_uniform);
+			if (smooth_method == 0)
+				explicit_smoothing(*mesh, iterations, use_uniform);
+			else
+			{
+				implicit_smoothing(*mesh, time_step, iterations, use_uniform, rescale);
+			}
 			ctx->graph->registry[Outputs.back().index].Set<SurfaceMesh>(mesh);
 			std::cout << "smooth_mesh" << std::endl;
 		}
@@ -68,11 +78,5 @@ namespace Geomerty {
 			viewer.data(0).clear();
 			viewer.data(0).set_mesh(SV, SF);
 		}
-
 	}
-
-
-
-
-
 }

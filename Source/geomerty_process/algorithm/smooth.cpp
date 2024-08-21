@@ -459,9 +459,354 @@ namespace Geomerty {
 		// copy matrix back to vertex coordinates
 		matrix_to_coordinates(X, mesh);
 	}
+	Scalar face_area(const SurfaceMesh& mesh, Face f)
+	{
+		Point a(0, 0, 0), q, r;
+		for (auto h : mesh.halfedges(f))
+		{
+			q = mesh.position(mesh.from_vertex(h));
+			r = mesh.position(mesh.to_vertex(h));
+			a += cross(q, r);
+		}
 
+		return 0.5 * norm(a);
+	}
+	Point centroid(const SurfaceMesh& mesh, Face f)
+	{
+		Point c(0, 0, 0);
+		Scalar n(0);
+		for (auto v : mesh.vertices(f))
+		{
+			c += mesh.position(v);
+			++n;
+		}
+		c /= n;
+		return c;
+	}
+	Point centroid(const SurfaceMesh& mesh)
+	{
+		Point center(0, 0, 0), c;
+		Scalar aa(0), a;
+		for (auto f : mesh.faces())
+		{
+			a = face_area(mesh, f);
+			c = centroid(mesh, f);
+			aa += a;
+			center += a * c;
+		}
+		center /= aa;
+		return center;
+	}
+	Scalar surface_area(const SurfaceMesh& mesh)
+	{
+		Scalar A(0);
+		for (auto f : mesh.faces())
+		{
+			A += face_area(mesh, f);
+		}
+		return A;
+	}
+	void uniform_mass_matrix(const SurfaceMesh& mesh, Eigen::DiagonalMatrix<double, Eigen::Dynamic>& M)
+	{
+		const unsigned int n = mesh.n_vertices();
+		Eigen::VectorXd diag(n);
+		for (auto v : mesh.vertices())
+			diag[v.idx()] = mesh.valence(v);
+		M = diag.asDiagonal();
+	}
+	void triangle_mass_matrix(const Eigen::Vector3d& p0, const Eigen::Vector3d& p1,
+		const Eigen::Vector3d& p2, Eigen::DiagonalMatrix<double, Eigen::Dynamic>& Mtri)
+	{
+		// three vertex positions
+		const std::array<dvec3, 3> p = { p0, p1, p2 };
+
+		// edge vectors
+		std::array<dvec3, 3> e;
+		for (int i = 0; i < 3; ++i)
+			e[i] = p[(i + 1) % 3] - p[i];
+
+		// compute and check (twice the) triangle area
+		const auto tri_area = norm(cross(e[0], e[1]));
+		if (tri_area <= std::numeric_limits<double>::min())
+		{
+			Mtri.setZero(3);
+			return;
+		}
+
+		// dot products for each corner (of its two emanating edge vectors)
+		std::array<double, 3> d;
+		for (int i = 0; i < 3; ++i)
+			d[i] = -dot(e[i], e[(i + 2) % 3]);
+
+		// cotangents for each corner: cot = cos/sin = dot(A,B)/norm(cross(A,B))
+		std::array<double, 3> cot;
+		for (int i = 0; i < 3; ++i)
+			cot[i] = d[i] / tri_area;
+
+		// compute area for each corner
+		Eigen::Vector3d area;
+		for (int i = 0; i < 3; ++i)
+		{
+			// angle at corner is obtuse
+			if (d[i] < 0.0)
+			{
+				area[i] = 0.25 * tri_area;
+			}
+			// angle at some other corner is obtuse
+			else if (d[(i + 1) % 3] < 0.0 || d[(i + 2) % 3] < 0.0)
+			{
+				area[i] = 0.125 * tri_area;
+			}
+			// no obtuse angles
+			else
+			{
+				area[i] = 0.125 * (sqrnorm(e[i]) * cot[(i + 2) % 3] +
+					sqrnorm(e[(i + 2) % 3]) * cot[(i + 1) % 3]);
+			}
+		}
+
+		Mtri = area.asDiagonal();
+	}
+	void polygon_mass_matrix(const Eigen::MatrixXd& polygon, Eigen::DiagonalMatrix<double, Eigen::Dynamic>& Mpoly)
+	{
+		const int n = (int)polygon.rows();
+
+		// shortcut for triangles
+		if (n == 3)
+		{
+			triangle_mass_matrix(polygon.row(0), polygon.row(1), polygon.row(2),
+				Mpoly);
+			return;
+		}
+
+		// compute position of virtual vertex
+		Eigen::VectorXd vweights;
+		compute_virtual_vertex(polygon, vweights);
+		Eigen::Vector3d vvertex = polygon.transpose() * vweights;
+
+		// laplace matrix of refined triangle fan
+		Eigen::MatrixXd Mfan = Eigen::MatrixXd::Zero(n + 1, n + 1);
+		Eigen::DiagonalMatrix<double, Eigen::Dynamic> Mtri;
+		for (int i = 0; i < n; ++i)
+		{
+			const int j = (i + 1) % n;
+
+			// build laplace matrix of one triangle
+			triangle_mass_matrix(polygon.row(i), polygon.row(j), vvertex, Mtri);
+
+			// assemble to laplace matrix for refined triangle fan
+			// (we are dealing with diagonal matrices)
+			Mfan.diagonal()[i] += Mtri.diagonal()[0];
+			Mfan.diagonal()[j] += Mtri.diagonal()[1];
+			Mfan.diagonal()[n] += Mtri.diagonal()[2];
+		}
+
+		// build prolongation matrix
+		Eigen::MatrixXd P(n + 1, n);
+		P.setIdentity();
+		P.row(n) = vweights;
+
+		// build polygon laplace matrix by sandwiching
+		Eigen::MatrixXd PMP = P.transpose() * Mfan * P;
+		Mpoly = PMP.rowwise().sum().asDiagonal();
+	}
+	void mass_matrix(const SurfaceMesh& mesh, Eigen::DiagonalMatrix<double, Eigen::Dynamic>& M)
+	{
+		const int nv = mesh.n_vertices();
+		std::vector<Vertex> vertices; // polygon vertices
+		Eigen::MatrixXd polygon;          // positions of polygon vertices
+		Eigen::DiagonalMatrix<double, Eigen::Dynamic> Mpoly;         // local mass matrix
+
+		M.setZero(nv);
+
+		for (Face f : mesh.faces())
+		{
+			// collect polygon vertices
+			vertices.clear();
+			for (Vertex v : mesh.vertices(f))
+			{
+				vertices.push_back(v);
+			}
+			const int n = vertices.size();
+
+			// collect their positions
+			polygon.resize(n, 3);
+			for (int i = 0; i < n; ++i)
+			{
+				polygon.row(i) = (Eigen::Vector3d)mesh.position(vertices[i]);
+			}
+
+			// setup local mass matrix
+			polygon_mass_matrix(polygon, Mpoly);
+
+			// assemble to global mass matrix
+			for (int k = 0; k < n; ++k)
+			{
+				M.diagonal()[vertices[k].idx()] += Mpoly.diagonal()[k];
+			}
+		}
+	}
+	Eigen::MatrixXd cholesky_solve(const Eigen::SparseMatrix<double>& A, const Eigen::MatrixXd& b)
+	{
+		Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
+		solver.compute(A);
+		if (solver.info() != Eigen::Success)
+		{
+			auto what =
+				std::string{ __func__ } + ": Failed to factorize linear system.";
+			throw SolverException(what);
+		}
+
+		const Eigen::MatrixXd x = solver.solve(b);
+		if (solver.info() != Eigen::Success)
+		{
+			auto what = std::string{ __func__ } + ": Failed to solve linear system.";
+			throw SolverException(what);
+		}
+
+		return x;
+	}
+	Eigen::MatrixXd cholesky_solve(
+		const Eigen::SparseMatrix<double>& A, const  Eigen::MatrixXd& B,
+		const std::function<bool(unsigned int)>& is_constrained,
+		const  Eigen::MatrixXd& C)
+	{
+		// if nothing is fixed, then use unconstrained solve
+		int n_constraints(0);
+		for (int i = 0; i < A.cols(); ++i)
+			if (is_constrained(i))
+				++n_constraints;
+		if (!n_constraints)
+			return cholesky_solve(A, B);
+
+		// build index map; n is #dofs
+		int n = 0;
+		std::vector<int> idx(A.cols(), -1);
+		for (int i = 0; i < A.cols(); ++i)
+			if (!is_constrained(i))
+				idx[i] = n++;
+
+		// copy columns for rhs
+		Eigen::MatrixXd BB(n, B.cols());
+		for (int i = 0; i < A.cols(); ++i)
+			if (idx[i] != -1)
+				BB.row(idx[i]) = B.row(i);
+
+		// collect entries for reduced matrix
+		// update rhs with constraints
+		std::vector<Triplet> triplets;
+		triplets.reserve(A.nonZeros());
+		for (unsigned int k = 0; k < A.outerSize(); k++)
+		{
+			for (Eigen::SparseMatrix<double>::InnerIterator iter(A, k); iter; ++iter)
+			{
+				const int i = iter.row();
+				const int j = iter.col();
+
+				if (idx[i] != -1) // row is dof
+				{
+					if (idx[j] != -1) // col is dof
+					{
+						triplets.emplace_back(idx[i], idx[j], iter.value());
+					}
+					else // col is constraint
+					{
+						BB.row(idx[i]) -= iter.value() * C.row(j);
+					}
+				}
+			}
+		}
+		Eigen::SparseMatrix<double> AA(n, n);
+		AA.setFromTriplets(triplets.begin(), triplets.end());
+
+		// factorize system
+		Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
+		solver.compute(AA);
+		if (solver.info() != Eigen::Success)
+		{
+			auto what =
+				std::string{ __func__ } + ": Failed to factorize linear system.";
+			throw SolverException(what);
+		}
+
+		// solve system
+		const  Eigen::MatrixXd XX = solver.solve(BB);
+		if (solver.info() != Eigen::Success)
+		{
+			auto what = std::string{ __func__ } + ": Failed to solve linear system.";
+			throw SolverException(what);
+		}
+
+		// build full-size result vector from solver result (X) and constraints (C)
+		Eigen::MatrixXd X(B.rows(), B.cols());
+		for (int i = 0; i < A.cols(); ++i)
+			X.row(i) = idx[i] == -1 ? C.row(i) : XX.row(idx[i]);
+
+		return X;
+	}
 	void implicit_smoothing(SurfaceMesh& mesh, Scalar timestep, unsigned int iterations, bool use_uniform_laplace, bool rescale)
 	{
+		if (!mesh.n_vertices())
+			return;
+
+		// store center and area
+		Point center_before(0, 0, 0);
+		Scalar area_before(0);
+		if (rescale)
+		{
+			center_before = centroid(mesh);
+			area_before = surface_area(mesh);
+		}
+
+		// build system matrix A (clamp negative cotan weights to zero)
+		Eigen::SparseMatrix<double> L;
+		Eigen::DiagonalMatrix<double, Eigen::Dynamic> M;
+		if (use_uniform_laplace)
+		{
+			uniform_laplace_matrix(mesh, L);
+			uniform_mass_matrix(mesh, M);
+		}
+		else
+		{
+			laplace_matrix(mesh, L, true);
+			mass_matrix(mesh, M);
+		}
+		Eigen::SparseMatrix<double> A = Eigen::SparseMatrix<double>(M) - timestep * L;
+		Eigen::MatrixXd X, B;
+
+		for (unsigned int iter = 0; iter < iterations; ++iter)
+		{
+			if (!use_uniform_laplace)
+			{
+				mass_matrix(mesh, M);
+				A = Eigen::SparseMatrix<double>(M) - timestep * L;
+			}
+
+			// build right-hand side B
+			coordinates_to_matrix(mesh, X);
+			B = M * X;
+
+			// solve system
+			auto is_constrained = [&](unsigned int i) {
+				return mesh.is_boundary(Vertex(i));
+				};
+			X = cholesky_solve(A, B, is_constrained, X);
+			matrix_to_coordinates(X, mesh);
+
+			if (rescale)
+			{
+				// restore original surface area
+				Scalar area_after = surface_area(mesh);
+				Scalar scale = sqrt(area_before / area_after);
+				for (auto v : mesh.vertices())
+					mesh.position(v) *= scale;
+				// restore original center
+				Point center_after = centroid(mesh);
+				Point trans = center_before - center_after;
+				for (auto v : mesh.vertices())
+					mesh.position(v) += trans;
+			}
+		}
 	}
 
 }

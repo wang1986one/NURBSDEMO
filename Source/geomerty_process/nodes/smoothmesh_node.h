@@ -5,6 +5,10 @@ namespace Geomerty {
 	private:
 		int iterations = 2;
 		bool use_uniform = false;
+		float time_step = 0.001f;
+		bool rescale = true;
+		int smooth_method = 0;
+
 	public:
 		Smooth_MeshNode(int id, const char* name, ImColor color = ImColor(255, 255, 255)) :Node(id, name, color) {}
 		void InstallUi() override;

@@ -154,7 +154,7 @@ B样条基函数的计算：
 2. 最开始需要i到i+1+d对应顶点的0阶基函数
 3. 然后高阶利用低阶的结果计算
 
-![image-20240821184057887](./Geomerty.assets/image-20240821184057887.png)
+![image-20240821212949072](Geomerty.assets/image-20240821212949072.png)
 
 ```c++
 inline scalar bspline_one_basis(int32 i, size_t deg, const Array<scalar>& U, scalar u)
@@ -199,6 +199,77 @@ inline scalar bspline_one_basis(int32 i, size_t deg, const Array<scalar>& U, sca
         }
     }
     return N[0];
+}
+```
+
+计算mesh上一个顶点的局部面积：
+
+![image-20240821230326460](Geomerty.assets/image-20240821230326460.png)
+
+对每个三角形，由顶点连接的两边中心与重心或者外心来确定顶点的面积，如Barycentric为重心 voronoi为外心，Mixed Voronoi为外心在三角形外部时，用钝角对边中心代替。
+
+这样计算的顶点邻域面积，可以用来计算mesh的质量矩阵M，计算M时最核心的算法是从三角形中计算顶点的邻域面积，然后组装不同三角形顶点的邻域面积。
+
+对于Voronoi，可以由边与对角余切得到面积，因为存在一个两倍的关系：
+
+![image-20240821232841188](Geomerty.assets/image-20240821232841188.png)
+
+伪代码:
+
+```c++
+void triangle_mass_matrix(const Eigen::Vector3d& p0, const Eigen::Vector3d& p1,
+    const Eigen::Vector3d& p2, Eigen::DiagonalMatrix<double, Eigen::Dynamic>& Mtri)
+{
+    // three vertex positions
+    const std::array<dvec3, 3> p = { p0, p1, p2 };
+
+    // edge vectors
+    std::array<dvec3, 3> e;
+    for (int i = 0; i < 3; ++i)
+        e[i] = p[(i + 1) % 3] - p[i];
+
+    // compute and check (twice the) triangle area
+    const auto tri_area = norm(cross(e[0], e[1]));
+    if (tri_area <= std::numeric_limits<double>::min())
+    {
+        Mtri.setZero(3);
+        return;
+    }
+
+    // dot products for each corner (of its two emanating edge vectors)
+    std::array<double, 3> d;
+    for (int i = 0; i < 3; ++i)
+        d[i] = -dot(e[i], e[(i + 2) % 3]);
+
+    // cotangents for each corner: cot = cos/sin = dot(A,B)/norm(cross(A,B))
+    std::array<double, 3> cot;
+    for (int i = 0; i < 3; ++i)
+        cot[i] = d[i] / tri_area;
+
+    // compute area for each corner
+    Eigen::Vector3d area;
+    for (int i = 0; i < 3; ++i)
+    {
+        // angle at corner is obtuse
+        if (d[i] < 0.0)
+        {
+            area[i] = 0.25 * tri_area;
+        }
+        // angle at some other corner is obtuse
+        else if (d[(i + 1) % 3] < 0.0 || d[(i + 2) % 3] < 0.0)
+        {
+            area[i] = 0.125 * tri_area;
+        }
+        // no obtuse angles
+        else
+        {
+            //外心在内部，利用了二倍角
+            area[i] = 0.125 * (sqrnorm(e[i]) * cot[(i + 2) % 3] +
+                sqrnorm(e[(i + 2) % 3]) * cot[(i + 1) % 3]);
+        }
+    }
+
+    Mtri = area.asDiagonal();
 }
 ```
 

@@ -273,3 +273,16 @@ void triangle_mass_matrix(const Eigen::Vector3d& p0, const Eigen::Vector3d& p1,
 }
 ```
 
+##### harmonic_parameterization
+
+将mesh参数化圆内：
+
+- 将边界顶点参数化到圆弧上
+- 利用laplace矩阵解方程组AX=B得到参数化结果。
+- 由于边界顶点的参数是确定的，X中边界顶点的uv是固定的，因此AX=B,实际上是要进一步处理约束，需要处理成非约束的。
+  - 对于非约束的顶点在A中划去所在行、所在列的系数，可以得到新的方阵A'。
+  - 对于非约束顶点划去B中对应的行，得到B‘。
+  - 对于从A得到A'时被划去的项，需要做移项处理，相当于从B’中减去对应值。
+  - 求解A'X=B‘，可以得到非约束顶点的参数化u,v。
+
+![image-20240823000041145](Geomerty.assets/image-20240823000041145.png)

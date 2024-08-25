@@ -1,13 +1,10 @@
-
-
 #include "ViewerData.h"
 #include "ViewerCore.h"
-
+#include "glviewer/destroy_shader_program.h"
 #include "per_face_normals.h"
 #include "material_colors.h"
 #include "per_vertex_normals.h"
 
-// Really? Just for GL_NEAREST?
 #include<glad/glad.h>
 
 #include <iostream>
@@ -497,11 +494,16 @@ void Geomerty::ViewerData::clear()
 	face_labels_strings.clear();
 	labels_strings.clear();
 
+	for (auto custom_shader : meshgl.custom_shaders) {
+		destroy_shader_program(custom_shader.first);//free();
+	}
+	meshgl.custom_shaders.clear();
 	face_based = false;
 	double_sided = false;
 	invert_normals = false;
 	show_texture = false;
 	use_matcap = false;
+
 }
 
 void Geomerty::ViewerData::compute_normals()

@@ -1,3 +1,4 @@
+#include<glad/glad.h>
 #include "core/graph.h"
 #include "core/ServiceLocator.h"
 #include "nodes/parametrization_node.h"
@@ -67,6 +68,40 @@ namespace Geomerty {
 			}
 			viewer.data(0).show_texture = true;
 			viewer.data(0).set_uv(UV);
+			std::string vert =
+				R"(#version 150
+			  in vec3 position;
+			  in vec3 normal;
+			  in vec4 Ka;
+			  in vec4 Kd;
+			  in vec4 Ks;
+			  in vec2 texcoord;
+              uniform vec2 ratio;
+			  void main()
+			  {
+               
+				gl_Position =  vec4 (1.0+(texcoord.x-1.0)/ratio.x-ratio.y/ratio.x,texcoord.y-ratio.y,-1.0, 1.0); //proj * view * vec4(position, 1.0);
+			  }
+			)";
+			std::string frag =
+				R"(#version 150
+			  out vec4 outColor;
+			  void main()
+			  {
+                 outColor= vec4(1.0,0.72,0.50,1.0);
+			  }
+			)";
+
+			viewer.data(0).meshgl.AddShader(vert, "", frag, [](GLuint program_id, Geomerty::MeshGL& mesh_gl, ViewerCore& view_core) {
+				auto w = view_core.viewport[2];
+				auto h = view_core.viewport[3];
+				GLint ratioi = glGetUniformLocation(program_id, "ratio");
+				glUniform2f(ratioi, w / h, 10.0f / h);
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				glDrawElements(GL_TRIANGLES, 3 * mesh_gl.F_vbo.rows(), GL_UNSIGNED_INT, 0);
+				glDisable(GL_POLYGON_OFFSET_FILL);
+				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+				});
 		}
 	}
 }

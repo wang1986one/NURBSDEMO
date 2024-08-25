@@ -128,6 +128,26 @@ void Geomerty::MeshGL::bind_mesh()
 	dirty &= ~MeshGL::DIRTY_MESH;
 }
 
+void Geomerty::MeshGL::draw_mesh_custom(int index, ViewerCore& view_core)
+{
+	assert(index < custom_shaders.size());
+	glBindVertexArray(vao_mesh);
+	auto shader = custom_shaders[index].first;
+	glUseProgram(shader);
+	bind_vertex_attrib_array(shader, "position", vbo_V, V_vbo, dirty & MeshGL::DIRTY_POSITION);
+	bind_vertex_attrib_array(shader, "normal", vbo_V_normals, V_normals_vbo, dirty & MeshGL::DIRTY_NORMAL);
+	bind_vertex_attrib_array(shader, "Ka", vbo_V_ambient, V_ambient_vbo, dirty & MeshGL::DIRTY_AMBIENT);
+	bind_vertex_attrib_array(shader, "Kd", vbo_V_diffuse, V_diffuse_vbo, dirty & MeshGL::DIRTY_DIFFUSE);
+	bind_vertex_attrib_array(shader, "Ks", vbo_V_specular, V_specular_vbo, dirty & MeshGL::DIRTY_SPECULAR);
+	bind_vertex_attrib_array(shader, "texcoord", vbo_V_uv, V_uv_vbo, dirty & MeshGL::DIRTY_UV);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo_F);
+	if (dirty & MeshGL::DIRTY_FACE)
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned) * F_vbo.size(), F_vbo.data(), GL_DYNAMIC_DRAW);
+	dirty &= ~MeshGL::DIRTY_MESH;
+	custom_shaders[index].second(shader, *this, view_core);
+}
+
 void Geomerty::MeshGL::bind_overlay_lines()
 {
 	bool is_dirty = dirty & MeshGL::DIRTY_OVERLAY_LINES;
@@ -216,6 +236,7 @@ void Geomerty::MeshGL::draw_mesh(bool solid)
 	glDisable(GL_POLYGON_OFFSET_FILL);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
+
 
 void Geomerty::MeshGL::draw_overlay_lines()
 {
@@ -510,6 +531,14 @@ void Geomerty::MeshGL::init()
 		shader_text);
 }
 
+GLuint Geomerty::MeshGL::AddShader(std::string vert, std::string geo, std::string frag, std::function<void(GLuint program_id, MeshGL& mesh_gl, ViewerCore& view_core)>custom_draw)
+{
+	GLuint program_id;
+	create_shader_program(geo, vert, frag, {}, program_id);
+	custom_shaders.push_back(std::make_pair(program_id, custom_draw));
+	return program_id;
+}
+
 void Geomerty::MeshGL::free()
 {
 	const auto free = [](GLuint& id)
@@ -527,6 +556,10 @@ void Geomerty::MeshGL::free()
 		free(shader_overlay_lines);
 		free(shader_overlay_points);
 		free(shader_text);
+		for (auto custom_shader : custom_shaders) {
+			free(custom_shader.first);
+		}
+		custom_shaders.clear();
 		free_buffers();
 	}
 }

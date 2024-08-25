@@ -4,7 +4,7 @@
 
 namespace Geomerty
 {
-
+	class ViewerCore;
 	class MeshGL
 	{
 	public:
@@ -41,6 +41,7 @@ namespace Geomerty
 		GLuint shader_overlay_lines;
 		GLuint shader_overlay_points;
 		GLuint shader_text;
+		std::vector<std::pair<GLuint, std::function<void(GLuint program_id, MeshGL& mesh_gl, ViewerCore& view_core)>>>custom_shaders;
 
 		/// Vertices of the current mesh (#V x 3)
 		GLuint vbo_V;
@@ -125,19 +126,26 @@ namespace Geomerty
 		/// Initialize shaders and buffers
 		void init();
 
+		GLuint AddShader(std::string vert, std::string geo, std::string frag, std::function<void(GLuint program_id, MeshGL& mesh_gl, ViewerCore& view_core)>custom_draw);
+
 		/// Release all resources
 		void free();
 
 		/// Create a new set of OpenGL buffer objects
 		void init_buffers();
 
+
 		/// Bind the underlying OpenGL buffer objects for subsequent mesh draw calls
 		void bind_mesh();
+
+		void draw_mesh_custom(int index, ViewerCore& view_core);
 
 		/// Draw the currently buffered mesh (either solid or wireframe)
 		///
 		/// @param[in] solid Whether to draw the mesh as a solid or wireframe
 		void draw_mesh(bool solid);
+
+
 
 		/// Bind the underlying OpenGL buffer objects for subsequent line overlay draw calls
 		void bind_overlay_lines();

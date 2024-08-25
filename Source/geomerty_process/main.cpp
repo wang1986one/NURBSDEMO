@@ -13,8 +13,6 @@
 #include "UI/Panels/PanelsManager.h"
 #include "panels/ControllerView.h"
 #include "panels/AssetBrowser.h"
-
-
 Windowing::Settings::WindowSettings windowSettings;
 Windowing::Settings::DeviceSettings deviceSettings;
 std::unique_ptr<Windowing::Context::Device>	device;
@@ -71,8 +69,6 @@ int main()
 	while (!window->ShouldClose())
 	{
 		device->PollEvents();
-		//glClearColor(0., 0., 0., 0.0);
-		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();

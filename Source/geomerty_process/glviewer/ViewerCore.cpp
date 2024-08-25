@@ -226,6 +226,10 @@ void Geomerty::ViewerCore::draw(
 			glUniform4f(fixed_colori, 0.0f, 0.0f, 0.0f, 0.0f);
 		}
 	}
+	for (int i = 0; i < data.meshgl.custom_shaders.size(); i++) {
+		data.meshgl.draw_mesh_custom(i, *this);
+
+	}
 
 	if (is_set(data.show_overlay))
 	{
@@ -525,7 +529,7 @@ bool Geomerty::ViewerCore::is_set(unsigned int property_mask) const
 Geomerty::ViewerCore::ViewerCore()
 {
 	// Default colors
-	background_color << 0.3f, 0.3f, 0.5f, 1.0f;
+	background_color << 0.2f, 0.2f, 0.2f, 1.0f;
 
 	// Default lights settings
 	light_position << 0.0f, 0.3f, 0.0f;

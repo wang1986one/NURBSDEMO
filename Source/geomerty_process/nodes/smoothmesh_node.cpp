@@ -48,7 +48,7 @@ namespace Geomerty {
 			std::cout << "smooth_mesh" << std::endl;
 		}
 	}
-	void Smooth_MeshNode::Present(opengl::glfw::Viewer& viewer) {
+	void Smooth_MeshNode::Present(Geomerty::Viewer& viewer) {
 		auto& registry = Geomerty::ServiceLocator::Get<Geomerty::Graph>().registry;
 		auto mesh = registry[Outputs.back().index].Get<SurfaceMesh>();
 		if (mesh != nullptr) {

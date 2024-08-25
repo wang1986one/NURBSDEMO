@@ -48,6 +48,7 @@ namespace Geomerty {
 	}
 	void harmonic_parameterization(SurfaceMesh& mesh, bool use_uniform_weights)
 	{
+		map_boundary_to_circle(mesh);
 		// get properties
 		auto tex = mesh.vertex_property<TexCoord>("v:tex");
 

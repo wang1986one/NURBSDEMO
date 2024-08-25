@@ -1,8 +1,13 @@
-#include"graph.h"
+#include <unordered_set>
+#include <unordered_map>
+#include <queue>
+#include "graph.h"
 #include "nodes/string_node.h"
 #include "nodes/readmesh_node.h"
 #include "nodes/smoothmesh_node.h"
 #include "nodes/shapes_node.h"
+#include "nodes/parametrization_node.h"
+
 void DrawIcon(ImDrawList* drawList, const ImVec2& a, const ImVec2& b, bool filled, ImU32 color, ImU32 innerColor)
 {
 	auto rect = ImRect(a, b);
@@ -431,6 +436,8 @@ namespace Geomerty {
 				node = SpawnSmoothMesh_Node();
 			if (ImGui::MenuItem("ShapeMesh"))
 				node = SpawnSpape_Node();
+			if (ImGui::MenuItem("Parametrization"))
+				node = SpawnParametrization_Node();
 			if (node)
 			{
 				createNewNode = false;
@@ -468,10 +475,10 @@ namespace Geomerty {
 	}
 	bool Graph::GetNodeETX(Geomerty::Node* n, Geomerty::ExetContex& ctx)
 	{
-
 		bool link_all = true;
 		std::vector<Geomerty::NodeData*>data_arr;
 		for (auto in_put : n->Inputs) {
+			//may not need
 			if (!IsPinLinked(in_put.ID)) {
 				link_all = false;
 				break;
@@ -486,14 +493,76 @@ namespace Geomerty {
 		}
 		return false;
 	}
-	void Graph::Execute(int to_index) {
-		for (int i = 0; i < m_Nodes.size(); i++) {
-			Geomerty::ExetContex ctx;
-			if (GetNodeETX(m_Nodes[i], ctx)) {
-				m_Nodes[i]->Execute(&ctx);
+	std::vector<Node*> Graph::GetNodeExecutuePath(int index)
+	{
+		assert(index < m_Nodes.size() && index >= 0);
+		std::unordered_set<Node*>vis;
+		std::unordered_map<Node*, std::vector<Node*>>node_connect;
+		std::vector<Node*>stack;
+		stack.push_back(m_Nodes[index]);
+		bool link_all = true;
+		while (!stack.empty())
+		{
+			auto node = stack.back();
+			stack.pop_back();
+			if (vis.find(node) == vis.end()) {
+				vis.insert(node);
 			}
-			if (to_index == i) {
+			for (auto input_pin : node->Inputs) {
+				auto start_pin = FindConnectedStartPin(input_pin.ID);
+				if (start_pin) {
+					stack.push_back(start_pin->Node);
+					node_connect[start_pin->Node].push_back(node);
+				}
+				else
+				{
+					link_all = false;
+					break;
+				}
+			}
+			if (!link_all) {
 				break;
+			}
+		}
+		if (link_all) {
+			std::unordered_map<Node*, int>in_degree;
+			for (auto it = vis.begin(); it != vis.end(); it++) {
+				in_degree[*it] = 0;
+			}
+			std::queue<Node*> que;
+			for (auto it : node_connect) {
+
+				for (auto child : it.second) {
+
+					in_degree[child]++;
+				}
+			}
+			for (auto it = vis.begin(); it != vis.end(); it++) {
+				if (in_degree[*it] == 0) {
+					que.push(*it);
+				}
+			}
+			std::vector<Node*>path;
+			while (!que.empty())
+			{
+				Node* cur = que.front(); que.pop();
+				path.push_back(cur);
+				for (auto it : node_connect[cur]) {
+					in_degree[it]--;
+					if (in_degree[it] == 0) {
+						que.push(it);
+					}
+				}
+			}
+			return path;
+		}
+		return std::vector<Node*>{};
+	}
+	void Graph::Execute(int to_index) {
+		for (auto node : GetNodeExecutuePath(to_index)) {
+			Geomerty::ExetContex ctx;
+			if (GetNodeETX(node, ctx)) {
+				node->Execute(&ctx);
 			}
 		}
 	}
@@ -520,5 +589,12 @@ namespace Geomerty {
 		m_Nodes.push_back(new Geomerty::ShapeNode(Geomerty::GetNextId(), "Shape_MeshNode"));
 		m_Nodes.back()->Init(this);
 		return m_Nodes.back();
+	}
+	Geomerty::Node* Graph::SpawnParametrization_Node()
+	{
+		m_Nodes.push_back(new Geomerty::Parametrization_Node(Geomerty::GetNextId(), "Parametrization_MeshNode"));
+		m_Nodes.back()->Init(this);
+		return m_Nodes.back();
+
 	}
 }

@@ -4,7 +4,7 @@
 #include <map>
 
 
-  namespace opengl
+  namespace Geomerty
   {
     /// Create a shader program with a vertex and fragments shader loading from
     /// source strings and vertex attributes assigned from a map before linking the

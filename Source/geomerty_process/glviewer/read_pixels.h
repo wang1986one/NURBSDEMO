@@ -2,7 +2,7 @@
 #include <Eigen/Core>
 #include<glad/glad.h>
 
-namespace opengl
+namespace Geomerty
 {
   /// Read full viewport into color, alpha and depth arrays suitable for
   /// igl::png::writePNG

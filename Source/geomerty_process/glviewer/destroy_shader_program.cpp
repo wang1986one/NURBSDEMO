@@ -9,7 +9,7 @@
 #include "report_gl_error.h"
 #include <cstdio>
 
-bool opengl::destroy_shader_program(const GLuint id)
+bool Geomerty::destroy_shader_program(const GLuint id)
 {
   // Don't try to destroy id == 0 (no shader program)
   if(id == 0)
@@ -27,7 +27,7 @@ bool opengl::destroy_shader_program(const GLuint id)
   {
     // Try to get at most *1* attached shader
     glGetAttachedShaders(id,1,&count,&s);
-    GLenum err = opengl::report_gl_error();
+    GLenum err = Geomerty::report_gl_error();
     if (GL_NO_ERROR != err)
     {
       return false;

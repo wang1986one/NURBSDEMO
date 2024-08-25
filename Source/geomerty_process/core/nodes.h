@@ -47,7 +47,7 @@ namespace Geomerty {
 		virtual void InstallUi() = 0;
 		virtual void Init(Graph* graph) = 0;
 		virtual void Execute(ExetContex* ctx) = 0;
-		virtual void Present(opengl::glfw::Viewer& viewer) = 0;
+		virtual void Present(Geomerty::Viewer& viewer) = 0;
 	};
 
 	using PinType = size_t;
@@ -98,7 +98,7 @@ namespace Geomerty {
 		void InstallUi()override {}
 		void Init(Graph* graph)override {}
 		void Execute(ExetContex* ctx)override {}
-		void Present(opengl::glfw::Viewer& viewer)override {}
+		void Present(Geomerty::Viewer& viewer)override {}
 	};
 	struct Link
 	{

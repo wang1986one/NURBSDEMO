@@ -37,10 +37,12 @@ namespace Geomerty {
 		bool CanCreateLink(Geomerty::Pin* a, Geomerty::Pin* b);
 
 		bool GetNodeETX(Geomerty::Node* n, Geomerty::ExetContex& ctx);
+		std::vector<Node*> GetNodeExecutuePath(int index);
 		Geomerty::Node* SpawnStringNode();
 		Geomerty::Node* SpawnRead_MeshNode();
 		Geomerty::Node* SpawnSmoothMesh_Node();
 		Geomerty::Node* SpawnSpape_Node();
+		Geomerty::Node* SpawnParametrization_Node();
 		int GetSelectNode();
 		void OnStart() {
 
@@ -51,6 +53,7 @@ namespace Geomerty {
 			node = SpawnRead_MeshNode(); ed::SetNodePosition(node->ID, ImVec2(-300, 351));
 			node = SpawnSmoothMesh_Node(); ed::SetNodePosition(node->ID, ImVec2(-350, 351));
 			node = SpawnSpape_Node(); ed::SetNodePosition(node->ID, ImVec2(-350, 351));
+			node = SpawnParametrization_Node(); ed::SetNodePosition(node->ID, ImVec2(-350, 351));
 			ed::NavigateToContent();
 		}
 		void OnStop()

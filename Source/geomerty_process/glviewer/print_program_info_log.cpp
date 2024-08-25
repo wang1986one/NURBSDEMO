@@ -4,7 +4,7 @@
 #include <cstdio>
 #include <stdlib.h>
 // Copyright Denis Kovacs 4/10/08
- void opengl::print_program_info_log(const GLuint obj)
+ void Geomerty::print_program_info_log(const GLuint obj)
 {
   GLint infologLength = 0;
   GLint charsWritten  = 0;

@@ -20,17 +20,17 @@ namespace Geomerty {
 			auto& inputManager =Geomerty::ServiceLocator::Get<Windowing::Inputs::InputManager>();
 			viewer.mouse_scroll(inputManager.GetMouseScrollOffset());
 			if (inputManager.IsMouseButtonPressed(Windowing::Inputs::EMouseButton::MOUSE_BUTTON_LEFT))
-				viewer.mouse_down(opengl::glfw::Viewer::MouseButton::Left);
+				viewer.mouse_down(Geomerty::Viewer::MouseButton::Left);
 			if (inputManager.IsMouseButtonReleased(Windowing::Inputs::EMouseButton::MOUSE_BUTTON_LEFT))
-				viewer.mouse_up(opengl::glfw::Viewer::MouseButton::Left);
+				viewer.mouse_up(Geomerty::Viewer::MouseButton::Left);
 			if (inputManager.IsMouseButtonPressed(Windowing::Inputs::EMouseButton::MOUSE_BUTTON_MIDDLE))
-				viewer.mouse_down(opengl::glfw::Viewer::MouseButton::Middle);
+				viewer.mouse_down(Geomerty::Viewer::MouseButton::Middle);
 			if (inputManager.IsMouseButtonReleased(Windowing::Inputs::EMouseButton::MOUSE_BUTTON_MIDDLE))
-				viewer.mouse_up(opengl::glfw::Viewer::MouseButton::Middle);
+				viewer.mouse_up(Geomerty::Viewer::MouseButton::Middle);
 			if (inputManager.IsMouseButtonPressed(Windowing::Inputs::EMouseButton::MOUSE_BUTTON_RIGHT))
-				viewer.mouse_down(opengl::glfw::Viewer::MouseButton::Right);
+				viewer.mouse_down(Geomerty::Viewer::MouseButton::Right);
 			if (inputManager.IsMouseButtonReleased(Windowing::Inputs::EMouseButton::MOUSE_BUTTON_RIGHT))
-				viewer.mouse_up(opengl::glfw::Viewer::MouseButton::Right);
+				viewer.mouse_up(Geomerty::Viewer::MouseButton::Right);
 			auto [x, y] = inputManager.GetMousePosition();
 			auto [lx,ly]=GetPosition();
 			viewer.mouse_move(x-lx, y-ly);

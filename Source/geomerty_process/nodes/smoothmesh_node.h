@@ -14,7 +14,7 @@ namespace Geomerty {
 		void InstallUi() override;
 		void Init(Graph* graph) override;
 		void Execute(ExetContex* ctx)override;
-		void Present(opengl::glfw::Viewer& viewer)override;
+		void Present(Geomerty::Viewer& viewer)override;
 	};
 
 }

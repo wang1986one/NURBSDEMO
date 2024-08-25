@@ -91,7 +91,6 @@ int main()
 				ex.m_Nodes[index]->InstallUi();
 			}
 			if (ImGui::Button("Execute")) {
-				//D:\Project\C++\opengl\DX11\data\SHREC2011\alien-1.obj
 				ex.Execute(index);
 				if (index != -1)
 					ex.m_Nodes[index]->Present(m_panelsManager->GetPanelAs<Geomerty::ControllerView>("Scene View").viewer);

@@ -3,7 +3,7 @@
 #include <Eigen/Core>
 
 
-  namespace opengl
+  namespace Geomerty
   {
 
      void create_index_vbo(

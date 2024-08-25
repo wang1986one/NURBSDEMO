@@ -2,7 +2,7 @@
 #include<glad/glad.h>
 
 
-  namespace opengl
+  namespace Geomerty
   {
     /// Print the info log for a shader object
     /// @param[in] obj  OpenGL index of shader to print info log about

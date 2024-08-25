@@ -15,6 +15,6 @@ namespace Geomerty {
 		void Update(float p_deltaTime)override;
 		void _Render_Impl()override;
 	public:
-		opengl::glfw::Viewer viewer;
+		Geomerty::Viewer viewer;
 	};
 }

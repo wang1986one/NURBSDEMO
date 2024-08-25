@@ -1,37 +1,35 @@
-#include "core/ServiceLocator.h"
-#include "nodes/readmesh_node.h"
 #include "core/graph.h"
+#include "core/ServiceLocator.h"
+#include "nodes/parametrization_node.h"
+#include "algorithm/parametrization.h"
 #include "algorithm/mesh_triangulate.h"
 namespace Geomerty {
-
-	void Read_MeshNode::InstallUi() {
+	void Parametrization_Node::InstallUi()
+	{
+		bool flag = false;
+		flag |= ImGui::Checkbox("Use Uniform lapace", &use_uniform);
 	}
-	void Read_MeshNode::Init(Graph* graph) {
-		Inputs.emplace_back(GetNextId(), "Path", typeid(std::string).hash_code(), PinKind::Input);
+	void Parametrization_Node::Init(Graph* graph)
+	{
+		Inputs.emplace_back(GetNextId(), "InputMesh", typeid(SurfaceMesh).hash_code(), PinKind::Input);
 		Inputs.back().Node = this;
-		Outputs.emplace_back(GetNextId(), "Mesh", typeid(SurfaceMesh).hash_code(), PinKind::Output);
+		Outputs.emplace_back(GetNextId(), "OutputMesh", typeid(SurfaceMesh).hash_code(), PinKind::Output);
 		Outputs.back().Node = this;
-
 		graph->registry[Outputs.back().index] = { nullptr,typeid(SurfaceMesh).hash_code() };
+
 	}
-	void Read_MeshNode::Execute(ExetContex* ctx) {
-		auto path = ctx->inputs[0]->Get<std::string>();
-		SurfaceMesh* mesh = new SurfaceMesh();
-		const std::filesystem::path fp((*path).c_str());
-		if (std::filesystem::exists(fp)) {
-			auto ext = fp.extension().string();
-			std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-
-			if (ext == ".obj")
-				read_obj(*mesh, fp);
-			else if (ext == ".off")
-				read_off(*mesh, fp);
-
+	void Parametrization_Node::Execute(ExetContex* ctx)
+	{
+		auto InputMesh = ctx->inputs[0]->Get<SurfaceMesh>();
+		if (InputMesh) {
+			SurfaceMesh* mesh = new SurfaceMesh(*InputMesh);
+			harmonic_parameterization(*mesh, use_uniform);
 			ctx->graph->registry[Outputs.back().index].Set<SurfaceMesh>(mesh);
-			std::cout << "read_mesh" << std::endl;
+			std::cout << "Parametrization_mesh" << std::endl;
 		}
 	}
-	void Read_MeshNode::Present(Geomerty::Viewer& viewer) {
+	void Parametrization_Node::Present(Geomerty::Viewer& viewer)
+	{
 		auto& registry = Geomerty::ServiceLocator::Get<Geomerty::Graph>().registry;
 		auto mesh = registry[Outputs.back().index].Get<SurfaceMesh>();
 		if (mesh != nullptr) {
@@ -60,9 +58,15 @@ namespace Geomerty {
 			}
 			viewer.data(0).clear();
 			viewer.data(0).set_mesh(SV, SF);
+			// get properties
+			auto tex = mesh->vertex_property<TexCoord>("v:tex").vector();
+			Eigen::MatrixXd UV;
+			UV.resize(pos.size(), 2);
+			for (int i = 0; i < tex.size(); i++) {
+				UV.row(i) << tex[i][0], tex[i][1];
+			}
+			viewer.data(0).show_texture = true;
+			viewer.data(0).set_uv(UV);
 		}
 	}
-
-
-
 }

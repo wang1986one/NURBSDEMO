@@ -233,7 +233,7 @@ namespace Geomerty {
 		auto& registry = Geomerty::ServiceLocator::Get<Geomerty::Graph>().registry;
 		ctx->graph->registry[Outputs.back().index].Set<SurfaceMesh>(mesh);
 	}
-	void ShapeNode::Present(opengl::glfw::Viewer& viewer)
+	void ShapeNode::Present(Geomerty::Viewer& viewer)
 	{
 		auto& registry = Geomerty::ServiceLocator::Get<Geomerty::Graph>().registry;
 		auto mesh = registry[Outputs.back().index].Get<SurfaceMesh>();

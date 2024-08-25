@@ -3,7 +3,7 @@
 #include <string>
 
 
-  namespace opengl
+  namespace Geomerty
   {
     /// Creates and compiles a shader from a given string
     ///

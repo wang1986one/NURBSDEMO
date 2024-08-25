@@ -1,8 +1,8 @@
 
 #include "create_index_vbo.h"
 
-// http://www.songho.ca/opengl/gl_vbo.html#create
- void opengl::create_index_vbo(
+// http://www.songho.ca/Geomerty/gl_vbo.html#create
+ void Geomerty::create_index_vbo(
   const Eigen::MatrixXi & F,
   GLuint & F_vbo_id)
 {

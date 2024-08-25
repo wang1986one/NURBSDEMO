@@ -2,7 +2,7 @@
 
 #include "tools/PathParser.h"
 
-std::string Tools::Utils::PathParser::MakeWindowsStyle(const std::string & p_path)
+std::string Tools::Utils::PathParser::MakeWindowsStyle(const std::string& p_path)
 {
 	std::string result;
 	result.resize(p_path.size());
@@ -13,7 +13,7 @@ std::string Tools::Utils::PathParser::MakeWindowsStyle(const std::string & p_pat
 	return result;
 }
 
-std::string Tools::Utils::PathParser::MakeNonWindowsStyle(const std::string & p_path)
+std::string Tools::Utils::PathParser::MakeNonWindowsStyle(const std::string& p_path)
 {
 	std::string result;
 	result.resize(p_path.size());
@@ -24,7 +24,7 @@ std::string Tools::Utils::PathParser::MakeNonWindowsStyle(const std::string & p_
 	return result;
 }
 //获取文件夹路径
-std::string Tools::Utils::PathParser::GetContainingFolder(const std::string & p_path)
+std::string Tools::Utils::PathParser::GetContainingFolder(const std::string& p_path)
 {
 	std::string result;
 
@@ -47,7 +47,7 @@ std::string Tools::Utils::PathParser::GetContainingFolder(const std::string & p_
 	return result;
 }
 
-std::string Tools::Utils::PathParser::GetElementName(const std::string & p_path)
+std::string Tools::Utils::PathParser::GetElementName(const std::string& p_path)
 {
 	std::string result;
 
@@ -63,7 +63,7 @@ std::string Tools::Utils::PathParser::GetElementName(const std::string & p_path)
 	return result;
 }
 
-std::string Tools::Utils::PathParser::GetExtension(const std::string & p_path)
+std::string Tools::Utils::PathParser::GetExtension(const std::string& p_path)
 {
 	std::string result;
 
@@ -92,15 +92,15 @@ std::string Tools::Utils::PathParser::FileTypeToString(EFileType p_fileType)
 	return "Unknown";
 }
 
-Tools::Utils::PathParser::EFileType Tools::Utils::PathParser::GetFileType(const std::string & p_path)
+Tools::Utils::PathParser::EFileType Tools::Utils::PathParser::GetFileType(const std::string& p_path)
 {
 	std::string ext = GetExtension(p_path);
 	std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
 
-	if (ext == "fbx" || ext == "obj" || ext == "gltf")											return EFileType::MODEL;
+	if (ext == "fbx" || ext == "obj" || ext == "gltf" || ext == "off")			return EFileType::MODEL;
 	else if (ext == "png" || ext == "jpeg" || ext == "jpg" || ext == "tga")		return EFileType::TEXTURE;
 	else if (ext == "glsl")														return EFileType::SHADER;
-	else if (ext == "mat")													return EFileType::MATERIAL;
+	else if (ext == "mat")													     return EFileType::MATERIAL;
 	else if (ext == "wav" || ext == "mp3" || ext == "ogg")						return EFileType::SOUND;
 	else if (ext == "scene")													return EFileType::SCENE;
 	else if (ext == "lua")														return EFileType::SCRIPT;

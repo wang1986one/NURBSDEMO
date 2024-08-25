@@ -2,7 +2,7 @@
 #include<glad/glad.h>
 
 
-  namespace opengl
+  namespace Geomerty
   {
     /// Properly destroy a shader program. Detach and delete each of its shaders
     /// and delete it

@@ -4,7 +4,7 @@
 #include <cassert>
 
 
-namespace opengl
+namespace Geomerty
 {
 
 // The string below is a compression of a 256x256x256 font atlas where each pixel's grayscale value is represented by a byte.

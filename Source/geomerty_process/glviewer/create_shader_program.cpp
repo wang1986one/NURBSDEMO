@@ -6,7 +6,7 @@
 #include <iostream>
 #include <cstdio>
 
- bool opengl::create_shader_program(
+ bool Geomerty::create_shader_program(
   const std::string & geom_source,
   const std::string & vert_source,
   const std::string & frag_source,
@@ -34,7 +34,7 @@
   if(geom_source != "")
   {
     // load vertex shader
-    g = opengl::load_shader(geom_source.c_str(),GL_GEOMETRY_SHADER);
+    g = Geomerty::load_shader(geom_source.c_str(),GL_GEOMETRY_SHADER);
     if(g == 0)
     {
       cerr<<"geometry shader failed to compile."<<endl;
@@ -46,7 +46,7 @@
   if(vert_source != "")
   {
     // load vertex shader
-    v = opengl::load_shader(vert_source.c_str(),GL_VERTEX_SHADER);
+    v = Geomerty::load_shader(vert_source.c_str(),GL_VERTEX_SHADER);
     if(v == 0)
     {
       cerr<<"vertex shader failed to compile."<<endl;
@@ -58,7 +58,7 @@
   if(frag_source != "")
   {
     // load fragment shader
-    f = opengl::load_shader(frag_source.c_str(),GL_FRAGMENT_SHADER);
+    f = Geomerty::load_shader(frag_source.c_str(),GL_FRAGMENT_SHADER);
     if(f == 0)
     {
       cerr<<"fragment shader failed to compile."<<endl;
@@ -93,12 +93,12 @@
   detach(v);
 
   // print log if any
-  opengl::print_program_info_log(id);
+  Geomerty::print_program_info_log(id);
 
   return true;
 }
 
- bool opengl::create_shader_program(
+ bool Geomerty::create_shader_program(
   const std::string & vert_source,
   const std::string & frag_source,
   const std::map<std::string,GLuint> & attrib,
@@ -108,7 +108,7 @@
 }
 
 
- GLuint opengl::create_shader_program(
+ GLuint Geomerty::create_shader_program(
   const std::string & geom_source,
   const std::string & vert_source,
   const std::string & frag_source,
@@ -119,7 +119,7 @@
   return prog_id;
 }
 
- GLuint opengl::create_shader_program(
+ GLuint Geomerty::create_shader_program(
   const std::string & vert_source,
   const std::string & frag_source,
   const std::map<std::string,GLuint> & attrib)

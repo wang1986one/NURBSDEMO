@@ -4,7 +4,7 @@
 // Copyright Denis Kovacs 4/10/08
 #include "print_shader_info_log.h"
 #include <cstdio>
- GLuint opengl::load_shader(
+ GLuint Geomerty::load_shader(
   const std::string & src,const GLenum type)
 {
   if(src.empty())
@@ -23,6 +23,6 @@
   glShaderSource(s, 1, &c, NULL);
   glCompileShader(s);
   // Print info log (if any)
-  opengl::print_shader_info_log(s);
+  Geomerty::print_shader_info_log(s);
   return s;
 }

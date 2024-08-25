@@ -3,7 +3,7 @@
 
 #include <cstdio>
 
-unsigned int opengl::report_gl_error(const std::string id)
+unsigned int Geomerty::report_gl_error(const std::string id)
 {
   // http://stackoverflow.com/q/28485180/148668
 
@@ -48,8 +48,8 @@ unsigned int opengl::report_gl_error(const std::string id)
   return err;
 }
 
- GLenum opengl::report_gl_error()
+ GLenum Geomerty::report_gl_error()
 {
-  return opengl::report_gl_error(std::string(""));
+  return Geomerty::report_gl_error(std::string(""));
 }
 

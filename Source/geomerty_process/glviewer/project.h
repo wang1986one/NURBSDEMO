@@ -26,7 +26,7 @@
   ///
   /// ####Example:
   /// \code{cpp}
-  ///   igl::opengl::glfw::Viewer vr;
+  ///   igl::Geomerty::Viewer vr;
   ///   ...
   ///   igl::project(V,vr.core().view,vr.core().proj,vr.core().viewport,P);
   /// \endcode

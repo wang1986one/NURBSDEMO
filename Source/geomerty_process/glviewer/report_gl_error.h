@@ -4,7 +4,7 @@
 #include <string>
 
 
-  namespace opengl
+  namespace Geomerty
   {
 
       unsigned int report_gl_error(const std::string id);

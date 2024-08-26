@@ -133,6 +133,32 @@ void Triangulation::triangulate(Face f)
 
 #### Nurbs
 
+##### Horner method
+
+描述的是计算幂基函数曲线上一点的快速方法：
+$$
+C\left( u \right)=\sum\limits_{i=0}^{n}{{{a}_{i}}{{u}^{i}}}\\
+\begin{align}
+  &\text{degree=1: }C\left( {{u}_{0}} \right)={{a}_{1}}{{u}_{0}}+{{a}_{0}} \\ 
+ &\text{ degree=2: }C\left( {{u}_{0}} \right)=\left( {{a}_{2}}{{u}_{0}}+{{a}_{1}} \right){{u}_{0}}+{{a}_{0}} \\ 
+ & \text{degree=n: }C\left( {{u}_{0}} \right)=\left( \left( \left( {{a}_{n}}{{u}_{0}}+{{a}_{n-1}} \right){{u}_{0}}+{{a}_{n-1}} \right)... \right){{u}_{0}}+{{a}_{0}} \\ 
+\end{align}
+$$
+
+
+##### Bezier
+
+贝塞尔曲线,采用Bernstein基函数，控制点作为系数。
+$$
+P(u)=\sum\limits_{i=1}^{n}{{{B}_{i,d}}\left( u \right)\cdot }{{P}_{i}}
+\\
+n=d+1
+\\
+B_i,_d(u)=(1-u)B_i,_{d-1}+uB_{i-1},_{d-1}\\
+{{B}_{i,d}}\left( u \right)=\frac{d!}{i!\left( n-i \right)!}{{u}^{i}}{{\left( 1-u \right)}^{d-i}}
+$$
+
+
 ##### average_knot_vector
 
 给出一堆离散点（通常遍布了nurbs curve）的参数，根据阶数生成，采用平均的方式生成节向量。

@@ -13,7 +13,7 @@ Geomerty::MeshGL::MeshGL() :
 
 void Geomerty::MeshGL::init_buffers()
 {
-	// Mesh: Vertex Array Object & Buffer objects
+	// Mesh: Vertex std::vector Object & Buffer objects
 	glGenVertexArrays(1, &vao_mesh);
 	glBindVertexArray(vao_mesh);
 	glGenBuffers(1, &vbo_V);

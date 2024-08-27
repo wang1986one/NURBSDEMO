@@ -133,7 +133,7 @@ private:
     const Vertex* m_start_vertex;
     const Vertex* m_vertex;
     const NMesh* m_mesh;
-    Array<index_t> m_used_indices;
+    std::vector<size_t> m_used_indices;
     PointPrimsRange m_current_point_prims_r;
 };
 

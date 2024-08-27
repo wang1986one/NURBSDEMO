@@ -7,6 +7,7 @@
 #include "nodes/smoothmesh_node.h"
 #include "nodes/shapes_node.h"
 #include "nodes/parametrization_node.h"
+#include "nodes/nurbs_arc_node.h"
 
 void DrawIcon(ImDrawList* drawList, const ImVec2& a, const ImVec2& b, bool filled, ImU32 color, ImU32 innerColor)
 {
@@ -438,6 +439,8 @@ namespace Geomerty {
 				node = SpawnSpape_Node();
 			if (ImGui::MenuItem("Parametrization"))
 				node = SpawnParametrization_Node();
+			if (ImGui::MenuItem("NurbsArc"))
+				node = SpawnNurbsArc_Node();
 			if (node)
 			{
 				createNewNode = false;
@@ -596,5 +599,11 @@ namespace Geomerty {
 		m_Nodes.back()->Init(this);
 		return m_Nodes.back();
 
+	}
+	Geomerty::Node* Graph::SpawnNurbsArc_Node()
+	{
+		m_Nodes.push_back(new Geomerty::NurbsArc_Node(Geomerty::GetNextId(), "Nurbs_ArcNode"));
+		m_Nodes.back()->Init(this);
+		return m_Nodes.back();
 	}
 }

@@ -90,7 +90,7 @@ namespace Geomerty
 		// Text Rendering
 		struct TextGL
 		{
-			std::uint8_t dirty_flag;
+			std::uint32_t dirty_flag;
 			GLuint vao_labels;
 			GLuint vbo_labels_pos;
 			GLuint vbo_labels_characters;
@@ -119,7 +119,7 @@ namespace Geomerty
 		Eigen::Matrix<unsigned, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> points_F_vbo;
 
 		/// Marks dirty buffers that need to be uploaded to OpenGL
-		std::uint8_t dirty;
+		std::uint32_t dirty;
 
 		MeshGL();
 

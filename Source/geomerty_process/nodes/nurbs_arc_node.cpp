@@ -27,6 +27,10 @@ namespace Geomerty {
 				Present(input_manager.GetPanelAs<Geomerty::ControllerView>("Scene View").viewer);
 			}
 		}
+		if (ImGui::Button("Present")) {
+			auto& input_manager = Geomerty::ServiceLocator::Get<UI::Panels::PanelsManager>();
+			Present(input_manager.GetPanelAs<Geomerty::ControllerView>("Scene View").viewer);
+		}
 	}
 	void NurbsArc_Node::Init(Graph* graph)
 	{
@@ -42,6 +46,12 @@ namespace Geomerty {
 		Geomerty::nurbs::RationalCurve* crv = new Geomerty::nurbs::RationalCurve();
 		*crv = Geomerty::nurbs::util::rational_ellipse_arc_curve(center, xaxis, yaxis, start_angle, end_angle);
 		ctx->graph->registry[Outputs.back().index].Set<Geomerty::nurbs::RationalCurve>(crv);
+
+		auto& input_manager = Geomerty::ServiceLocator::Get<UI::Panels::PanelsManager>();
+		auto& arr = input_manager.GetPanelAs<Geomerty::ControllerView>("Scene View").arr;
+		arr.clear();
+		arr.emplace_back(&(crv->m_control_points));
+
 	}
 	void NurbsArc_Node::Present(Geomerty::Viewer& viewer)
 	{
@@ -62,8 +72,18 @@ namespace Geomerty {
 					TC.row(i - 1) << 1, 1, 1;
 				}
 			}
+
 			viewer.data(0).clear();
 			viewer.data(0).set_points(TV, Eigen::RowVector3d(1, 1, 0));
+			Eigen::MatrixXd TTV;
+			TTV.resize(crv->m_control_points.size(), 3);
+			for (int i = 0; i < crv->m_control_points.size(); i++) {
+				TTV.row(i) << crv->m_control_points[i][0], crv->m_control_points[i][1], crv->m_control_points[i][2];
+			}
+			Eigen::MatrixXd cc;
+			cc.resize(1, 3);
+			cc.row(0) << 0, 1, 1;
+			viewer.data(0).add_points(TTV, cc);
 			viewer.data(0).point_size = 10;
 			viewer.data(0).set_edges(TV, TE, TC);
 			viewer.data(0).line_width = 2;

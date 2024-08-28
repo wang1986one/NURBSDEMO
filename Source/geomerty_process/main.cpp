@@ -71,9 +71,9 @@ int main()
 		device->PollEvents();
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
-		ImGui::NewFrame();
+		ImGui::NewFrame(); m_panelsManager->GetPanelAs<Geomerty::ControllerView>("Scene View").Render();
 		m_panelsManager->GetPanelAs<Geomerty::ControllerView>("Scene View").Update(1);
-		m_panelsManager->GetPanelAs<Geomerty::ControllerView>("Scene View").Render();
+
 
 		uiManager->Render();
 		if (ImGui::Begin("NodeGraph", nullptr, ImGuiWindowFlags_None)) {

@@ -1,7 +1,8 @@
 #pragma once
 #include<vector>
-
-namespace nous
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
+namespace Geomerty
 {
 	namespace nurbs
 	{

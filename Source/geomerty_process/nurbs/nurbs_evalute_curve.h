@@ -2,10 +2,10 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
-#include "nous_nurbs_curve.h"
-#include "nous_nurbs_util.h"
+#include "nurbs_curve.h"
+#include "nurbs_util.h"
 
-namespace nous::nurbs::util
+namespace Geomerty::nurbs::util
 {
 	/**
 	 * Returns whether the curve is valid
@@ -56,7 +56,7 @@ namespace nous::nurbs::util
 		assert(!n.empty());
 
 		// Compute point
-		for (int j=0;j<degree + 1;j++)
+		for (int j = 0; j < degree + 1; j++)
 		{
 			point += static_cast<scalar>(n[j]) * control_points[span - degree + j];
 		}
@@ -99,7 +99,7 @@ namespace nous::nurbs::util
 		curve_ders.resize(num_ders + 1);
 
 		// Assign higher order derivatives to zero
-		for (int k = degree + 1; k <num_ders + 1 ; k++)
+		for (int k = degree + 1; k < num_ders + 1; k++)
 		{
 			curve_ders[k] = T::Zero();
 		}
@@ -110,10 +110,10 @@ namespace nous::nurbs::util
 
 		// Compute first num_ders derivatives
 		int du = num_ders < static_cast<int>(degree) ? num_ders : static_cast<int>(degree);
-		for (int k = 0; k <du + 1 ; k++)
+		for (int k = 0; k < du + 1; k++)
 		{
 			curve_ders[k] = T::Zero();
-			for (int j = 0; j <degree + 1 ; j++)
+			for (int j = 0; j < degree + 1; j++)
 			{
 				curve_ders[k] += ders[k][j] * control_points[span - degree + j];
 			}
@@ -230,7 +230,7 @@ namespace nous::nurbs::util
 
 		// Insert new knots between k and (k + 1)
 		new_knots.resize(knots.size() + r);
-		for (int i = 0; i <k + 1 ; i++)
+		for (int i = 0; i < k + 1; i++)
 		{
 			new_knots[i] = knots[i];
 		}
@@ -238,7 +238,7 @@ namespace nous::nurbs::util
 		{
 			new_knots[k + i] = u;
 		}
-		for (int i = k + 1; i <knots.size() ; i++)
+		for (int i = k + 1; i < knots.size(); i++)
 		{
 			new_knots[i + r] = knots[i];
 		}
@@ -248,7 +248,7 @@ namespace nous::nurbs::util
 		{
 			new_cp[i] = cp[i];
 		}
-		for (int i = k - s; i <cp.size() ; i++)
+		for (int i = k - s; i < cp.size(); i++)
 		{
 			new_cp[i + r] = cp[i];
 		}
@@ -260,10 +260,10 @@ namespace nous::nurbs::util
 			tmp[i] = cp[k - deg + i];
 		}
 		// Modify affected control points
-		for (int j = 1; j< r + 1; j++)
+		for (int j = 1; j < r + 1; j++)
 		{
 			int L = k - deg + j;
-			for (int i = 0; i <deg - j - s + 1 ; i++)
+			for (int i = 0; i < deg - j - s + 1; i++)
 			{
 				scalar a = (u - knots[L + i]) / (knots[i + k + 1] - knots[L + i]);
 				tmp[i] = (1 - a) * tmp[i] + a * tmp[i + 1];
@@ -351,7 +351,7 @@ namespace nous::nurbs::util
 		right_control_points.clear();
 
 		int span_l = find_span(degree, tmp_knots, u) + 1;
-		for (int i = 0; i <span_l ; i++)
+		for (int i = 0; i < span_l; i++)
 		{
 			left_knots.emplace_back(tmp_knots[i]);
 		}
@@ -361,17 +361,17 @@ namespace nous::nurbs::util
 		{
 			right_knots.emplace_back(u);
 		}
-		for (int i = span_l; i <tmp_knots.size() ; i++)
+		for (int i = span_l; i < tmp_knots.size(); i++)
 		{
 			right_knots.emplace_back(tmp_knots[i]);
 		}
 
 		int ks = span - degree + 1;
-		for (int i = 0; i <ks + r ; i++)
+		for (int i = 0; i < ks + r; i++)
 		{
 			left_control_points.emplace_back(tmp_cp[i]);
 		}
-		for (int i = ks + r - 1; i <tmp_cp.size() ; i++)
+		for (int i = ks + r - 1; i < tmp_cp.size(); i++)
 		{
 			right_control_points.emplace_back(tmp_cp[i]);
 		}
@@ -526,14 +526,19 @@ namespace nous::nurbs::util
 	 * @param[in] throughpoints The points that the ration B-spline curve will fit
 	 * @param[out] crv the ration B-spline curve will fit
 	 */
-	inline void global_interpolation(const size_t degree, const std::vector<vec3>& throughpoints, RationalCurve& crv)
+	inline void global_interpolation(const size_t degree, const std::vector<vec3>& throughpoints, RationalCurve& crv, const std::vector<scalar>& params = {})
 	{
 
 		int size = throughpoints.size();
 		int n = size - 1;
 		// The chord length parameterization maybe others better
 		std::vector<scalar> uk(size);
-		uk = get_chord_parameterization(throughpoints);
+		if (params.size() == 0)
+			uk = get_chord_parameterization(throughpoints);
+		else
+		{
+			uk = params;
+		}
 
 		// AverageKnotVector
 		std::vector<scalar> knot_vector = average_knot_vector(degree, uk);
@@ -572,6 +577,236 @@ namespace nous::nurbs::util
 		crv.m_knots.swap(knot_vector);
 		crv.m_control_points.swap(control_points);
 		crv.m_weights.swap(weight);
+	}
+	inline void elevate_degree(const RationalCurve& curve, int times, RationalCurve& result)
+	{
+		int degree = curve.m_degree;
+		std::vector<scalar> knotVector = curve.m_knots;
+		std::vector<vec3> controlPoints = curve.m_control_points;
+		std::vector<scalar> controlPointsweights = curve.m_weights;
+
+		int n = controlPoints.size() - 1;
+		int m = n + degree + 1;
+		int ph = degree + times;
+		int ph2 = floor(ph / 2);
+
+		std::vector<std::vector<float>> bezalfs(degree + times + 1, std::vector<float>(degree + 1));
+		bezalfs[0][0] = bezalfs[ph][degree] = 1.0;
+
+		for (int i = 1; i <= ph2; i++)
+		{
+			float inv = 1.0 / binomial(ph, i);
+			int mpi = std::min(degree, i);
+
+			for (int j = std::max(0, i - times); j <= mpi; j++)
+			{
+				bezalfs[i][j] = inv * binomial(degree, j) * binomial(times, i - j);
+			}
+		}
+
+		for (int i = ph2 + 1; i <= ph - 1; i++)
+		{
+			int mpi = std::min(degree, i);
+			for (int j = std::max(0, i - times); j <= mpi; j++)
+			{
+				bezalfs[i][j] = bezalfs[ph - i][degree - j];
+			}
+		}
+
+		int mh = ph;
+		int kind = ph + 1;
+		int r = -1;
+		int a = degree;
+		int b = degree + 1;
+		int cind = 1;
+		float ua = knotVector[0];
+
+		int moresize = controlPoints.size() + controlPoints.size() * times;
+		std::vector<vec3> updatedControlPoints(moresize, vec3(1e9, 1e9, 1e9));
+		std::vector<scalar> updateweights(moresize, 1.0);
+		updatedControlPoints[0] = controlPoints[0];
+		updateweights[0] = controlPointsweights[0];
+		std::vector<float> updatedKnotVector(moresize + ph + 1, 1e9);
+		for (int i = 0; i <= ph; i++)
+		{
+			updatedKnotVector[i] = ua;
+		}
+
+		std::vector<vec3> bpts(degree + 1);
+		std::vector<scalar> bpts_weights(degree + 1);
+		for (int i = 0; i <= degree; i++)
+		{
+			bpts[i] = controlPoints[i];
+			bpts_weights[i] = controlPointsweights[i];
+		}
+
+		std::vector<vec3> nextbpts(degree - 1);
+		std::vector<float> nextbpts_weight(degree - 1);
+		while (b < m)
+		{
+			int i = b;
+			while (b < m && is_almost_equal(knotVector[b], knotVector[b + 1]))
+			{
+				b = b + 1;
+			}
+			int mul = b - i + 1;
+			mh += mul + times;
+			float ub = knotVector[b];
+
+			int oldr = r;
+			r = degree - mul;
+
+			int lbz = oldr > 0 ? floor((oldr + 2) / 2) : 1;
+			int rbz = r > 0 ? floor(ph - (r + 1) / 2) : ph;
+
+			if (r > 0)
+			{
+				float numer = ub - ua;
+				std::vector<float> alfs(degree - 1);
+				for (int k = degree; k > mul; k--)
+				{
+					alfs[k - mul - 1] = numer / (knotVector[a + k] - ua);
+				}
+				for (int j = 1; j <= r; j++)
+				{
+					int save = r - j;
+					int s = mul + j;
+
+					for (int k = degree; k >= s; k--)
+					{
+						bpts[k] = alfs[k - s] * bpts[k] + (1.0 - alfs[k - s]) * bpts[k - 1];
+						bpts_weights[k] = alfs[k - s] * bpts_weights[k] + (1.0 - alfs[k - s]) * bpts_weights[k - 1];
+					}
+					nextbpts[save] = bpts[degree];
+					nextbpts_weight[save] = bpts_weights[degree];
+				}
+			}
+
+			std::vector<vec3> ebpts(degree + times + 1);
+			std::vector<scalar> ebpts_weight(degree + times + 1);
+			for (int i = lbz; i <= ph; i++)
+			{
+				ebpts[i] = vec3(0.0, 0.0, 0.0);
+				ebpts_weight[i] = 0.0;
+				int mpi = std::min(degree, i);
+				for (int j = std::max(0, i - times); j <= mpi; j++)
+				{
+					ebpts[i] += bezalfs[i][j] * bpts[j];
+					ebpts_weight[i] += bezalfs[i][j] * bpts_weights[j];
+				}
+			}
+
+			if (oldr > 1)
+			{
+				int first = kind - 2;
+				int last = kind;
+				float den = ub - ua;
+				float bet = (ub - updatedKnotVector[kind - 1]) / den;
+
+				for (int tr = 1; tr < oldr; tr++)
+				{
+					int i = first;
+					int j = last;
+					int kj = j - kind + 1;
+
+					while (j - i > tr)
+					{
+						if (i < cind)
+						{
+							float alf = (ub - updatedKnotVector[i]) / (ua - updatedKnotVector[i]);
+							updatedControlPoints[i] = alf * updatedControlPoints[i] + (1.0 - alf) * updatedControlPoints[i - 1];
+							updateweights[i] = alf * updateweights[i] + (1.0 - alf) * updateweights[i - 1];
+						}
+
+						if (j >= lbz)
+						{
+							if (j - tr <= kind - ph + oldr)
+							{
+								float gam = (ub - updatedKnotVector[j - tr]) / den;
+								ebpts[kj] = gam * ebpts[kj] + (1.0 - gam) * ebpts[kj + 1];
+								ebpts_weight[kj] = gam * ebpts_weight[kj] + (1.0 - gam) * ebpts_weight[kj + 1];
+							}
+							else
+							{
+								ebpts[kj] = bet * ebpts[kj] + (1.0 - bet) * ebpts[kj + 1];
+								ebpts_weight[kj] = bet * ebpts_weight[kj] + (1.0 - bet) * ebpts_weight[kj + 1];
+							}
+						}
+
+						i = i + 1;
+						j = j - 1;
+						kj = kj - 1;
+					}
+
+					first -= 1;
+					last += 1;
+				}
+			}
+
+			if (a != degree)
+			{
+				for (int i = 0; i < ph - oldr; i++)
+				{
+					updatedKnotVector[kind++] = ua;
+				}
+			}
+
+			for (int j = lbz; j <= rbz; j++)
+			{
+				updatedControlPoints[cind] = ebpts[j];
+				updateweights[cind++] = ebpts_weight[j];
+			}
+
+			if (b < m)
+			{
+				for (int j = 0; j < r; j++)
+				{
+					bpts[j] = nextbpts[j];
+					bpts_weights[j] = nextbpts_weight[j];
+				}
+				for (int j = r; j <= degree; j++)
+				{
+					bpts[j] = controlPoints[b - degree + j];
+					bpts_weights[j] = controlPointsweights[b - degree + j];
+				}
+
+				a = b;
+				b = b + 1;
+				ua = ub;
+			}
+			else
+			{
+				for (int i = 0; i <= ph; i++)
+				{
+					updatedKnotVector[kind + i] = ub;
+				}
+			}
+		}
+
+		for (int i = updatedControlPoints.size() - 1; i > 0; i--)
+		{
+			if (is_almost_equal(updatedControlPoints[i][0], 1e9) && is_almost_equal(updatedControlPoints[i][1], 1e9) &&
+				is_almost_equal(updatedControlPoints[i][2], 1e9))
+			{
+				updatedControlPoints.pop_back();
+				updateweights.pop_back();
+				continue;
+			}
+			break;
+		}
+		for (int i = updatedKnotVector.size() - 1; i > 0; i--)
+		{
+			if (is_almost_equal(updatedKnotVector[i], 1e9))
+			{
+				updatedKnotVector.pop_back();
+				continue;
+			}
+			break;
+		}
+		result.m_degree = ph;
+		result.m_knots = updatedKnotVector;
+		result.m_control_points = updatedControlPoints;
+		result.m_weights = updateweights;
 	}
 	/*
 	 * sample a NURBS curve to a std::vector
@@ -636,185 +871,4 @@ namespace nous::nurbs::util
 		return close_point;
 	}
 
-	//  make nurbs shapes
-	inline RationalCurve rational_bezier_curve(const std::vector<vec3>& control_points, std::vector<scalar> weights)
-	{
-		size_t n = control_points.size();
-		if (weights.empty())
-		{
-			weights = std::vector<scalar>(n, 1.0);
-		}
-		else
-		{
-			assert(n == weights.size());
-		}
-		size_t degree = n - 1;
-		std::vector<scalar> knots(n + degree + 1, 0.0);
-		for (int i = n; i < knots.size(); i++)
-		{
-			knots[i] = 1.0;
-		}
-		RationalCurve crv;
-		crv.m_degree = degree;
-		crv.m_knots = knots;
-		crv.m_control_points = control_points;
-		crv.m_weights = weights;
-		return crv;
-	}
-	inline RationalCurve rational_polyline_curve(const std::vector<vec3>& control_points)
-	{
-		size_t n = control_points.size();
-		size_t degree = 1;
-		std::vector<scalar> knots(n + degree + 1, 1.0);
-		for (int i = 0; i < degree + 1; i++)
-		{
-			knots[i] = 0.0;
-		}
-		scalar length = get_total_chord_length(control_points);
-		scalar addsum = 0.0f;
-		for (int i = 1; i < control_points.size() - 1; i++)
-		{
-			addsum += (control_points[i] - control_points[i - 1]).norm();
-			knots[i + degree + 1] = addsum / length;
-		}
-
-		RationalCurve crv;
-		crv.m_degree = degree;
-		crv.m_knots = knots;
-		crv.m_control_points = control_points;
-		crv.m_weights = std::vector<scalar>(n, 1.0);
-		return crv;
-	}
-	inline RationalCurve rational_ellipse_arc_curve(const vec3& center, vec3 xaxis, vec3 yaxis, scalar start_angle, scalar end_angle)
-	{
-		scalar xradius = xaxis.norm();
-		scalar yradius = yaxis.norm();
-		xaxis = xaxis.normalized();
-		yaxis = yaxis.normalized();
-		if (end_angle < start_angle)
-		{
-			end_angle = start_angle + static_cast<scalar>(N_FLOAT_PI);
-		}
-		scalar theta = end_angle - start_angle;
-		int num_arcs = 0;
-		if (theta <= (N_FLOAT_PI / 2))
-		{
-			num_arcs = 1;
-		}
-		else
-		{
-			if ((theta <= N_FLOAT_PI))
-			{
-				num_arcs = 2;
-			}
-			else
-			{
-				if (theta <= (N_FLOAT_PI * 1.5))
-				{
-					num_arcs = 3;
-				}
-				else
-				{
-					num_arcs = 4;
-				}
-			}
-		}
-
-		scalar dtheta = (theta / num_arcs);
-		int n = 2 * num_arcs;
-		scalar w1 = cos(dtheta / 2);
-		vec3 P0 = xradius * cos(start_angle) * xaxis;
-		vec3 P01 = center + P0 + yradius * sin(start_angle) * yaxis;
-		vec3 T0 = cos(start_angle) * yaxis;
-		vec3 T01 = T0 - sin(start_angle) * xaxis;
-		std::vector<vec3> control_points;
-		control_points.resize(num_arcs * 2 + 1);
-		std::vector<scalar> knots(2 * num_arcs + 4, 0.0);
-		int index = 0.0;
-		scalar angle = start_angle;
-		std::vector<scalar> weights(num_arcs * 2 + 1, 0.0);
-		control_points[0] = P01;
-		weights[0] = 1.0;
-
-		int _g = 1;
-		int _g1 = (num_arcs + 1);
-		while ((_g < _g1))
-		{
-			_g = (_g + 1);
-			int i = (_g - 1);
-			angle = (angle + dtheta);
-			vec3 P2 = xradius * cos(angle) * xaxis;
-			vec3 P21 = center + P2 + yradius * sin(angle) * yaxis;
-			weights[(index + 2)] = 1.0f;
-			control_points[(index + 2)] = P21;
-			vec3 T2 = cos(angle) * yaxis;
-			vec3 T21 = T2 - sin(angle) * xaxis;
-			vec3 inters = T01.normalized();
-			scalar t;
-			{
-				vec3 a0 = P01;
-				vec3 a = inters;
-				vec3 b0 = P21;
-				vec3 b = T21.normalized();
-				scalar dab = a.dot(b);
-				scalar dab0 = a.dot(b0);
-				scalar daa0 = a.dot(a0);
-				scalar dbb0 = b.dot(b0);
-				scalar dba0 = b.dot(a0);
-				scalar daa = a.dot(a);
-				scalar dbb = b.dot(b);
-				scalar div = ((daa * dbb) - (dab * dab));
-				if (div < N_SCALAR_EPSILON)
-				{
-					return RationalCurve();
-				}
-				scalar num = ((dab * (dab0 - daa0)) - (daa * (dbb0 - dba0)));
-				scalar w = (num / div);
-				t = (((dab0 - daa0) + (w * dab)) / daa);
-			}
-			vec3 P1 = P01 + t * T01;
-
-			weights[(index + 1)] = w1;
-			control_points[(index + 1)] = P1;
-			index = (index + 2);
-			if ((i < num_arcs))
-			{
-				P01 = P21;
-				T01 = T21;
-			}
-		}
-
-		int j = ((2 * num_arcs) + 1);
-		knots[0] = 0.0;
-		knots[j] = 1.0;
-		knots[1] = 0.0;
-		knots[(1 + j)] = 1.0;
-		knots[2] = 0.0;
-		knots[(2 + j)] = 1.0;
-		switch (num_arcs)
-		{
-		case 2: {
-			knots[3] = (knots[4] = (0.5));
-		}
-			  break;
-		case 3: {
-			knots[3] = (knots[4] = (0.33333333333333331));
-			knots[5] = (knots[6] = (0.66666666666666663));
-		}
-			  break;
-		case 4: {
-			knots[3] = (knots[4] = (0.25));
-			knots[5] = (knots[6] = (0.5));
-			knots[7] = (knots[8] = (0.75));
-		}
-			  break;
-		}
-
-		RationalCurve crv;
-		crv.m_degree = 2;
-		crv.m_knots = knots;
-		crv.m_control_points = control_points;
-		crv.m_weights = weights;
-		return crv;
-	}
 }// namespace nous::nurbs::util

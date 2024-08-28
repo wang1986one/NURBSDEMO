@@ -2,7 +2,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 
-namespace nous
+namespace Geomerty
 {
 	namespace nurbs
 	{

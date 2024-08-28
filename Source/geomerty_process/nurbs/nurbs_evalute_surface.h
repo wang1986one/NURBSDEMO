@@ -3,12 +3,12 @@
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include<tuple>
-#include "nous_evalute_nurbs_curve.h"
-#include "nous_nurbs_curve.h"
-#include "nous_nurbs_surface.h"
-#include "nous_nurbs_util.h"
+#include "nurbs_evalute_curve.h"
+#include "nurbs_curve.h"
+#include "nurbs_surface.h"
+#include "nurbs_util.h"
 
-namespace nous
+namespace Geomerty
 {
 	namespace nurbs
 	{

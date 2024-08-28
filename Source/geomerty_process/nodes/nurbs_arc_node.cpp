@@ -5,7 +5,8 @@
 #include "core/ServiceLocator.h"
 #include "nodes/nurbs_arc_node.h"
 #include "algorithm/mesh_triangulate.h"
-#include "nurbs/nous_evalute_nurbs_curve.h"
+#include "nurbs/nurbs_evalute_curve.h"
+#include "nurbs/nurbs_make.h"
 namespace Geomerty {
 	void NurbsArc_Node::InstallUi()
 	{
@@ -30,24 +31,24 @@ namespace Geomerty {
 	void NurbsArc_Node::Init(Graph* graph)
 	{
 
-		Outputs.emplace_back(GetNextId(), "OutputArc", typeid(nous::nurbs::RationalCurve).hash_code(), PinKind::Output);
+		Outputs.emplace_back(GetNextId(), "OutputArc", typeid(Geomerty::nurbs::RationalCurve).hash_code(), PinKind::Output);
 		Outputs.back().Node = this;
-		graph->registry[Outputs.back().index] = { nullptr,typeid(nous::nurbs::RationalCurve).hash_code() };
+		graph->registry[Outputs.back().index] = { nullptr,typeid(Geomerty::nurbs::RationalCurve).hash_code() };
 
 	}
 	void NurbsArc_Node::Execute(ExetContex* ctx)
 	{
-		using Vec3 = nous::nurbs::util::vec3;
-		nous::nurbs::RationalCurve* crv = new nous::nurbs::RationalCurve();
-		*crv = nous::nurbs::util::rational_ellipse_arc_curve(center, xaxis, yaxis, start_angle, end_angle);
-		ctx->graph->registry[Outputs.back().index].Set<nous::nurbs::RationalCurve>(crv);
+		using Vec3 = Geomerty::nurbs::util::vec3;
+		Geomerty::nurbs::RationalCurve* crv = new Geomerty::nurbs::RationalCurve();
+		*crv = Geomerty::nurbs::util::rational_ellipse_arc_curve(center, xaxis, yaxis, start_angle, end_angle);
+		ctx->graph->registry[Outputs.back().index].Set<Geomerty::nurbs::RationalCurve>(crv);
 	}
 	void NurbsArc_Node::Present(Geomerty::Viewer& viewer)
 	{
 		auto& registry = Geomerty::ServiceLocator::Get<Geomerty::Graph>().registry;
-		auto crv = registry[Outputs.back().index].Get<nous::nurbs::RationalCurve>();
+		auto crv = registry[Outputs.back().index].Get<Geomerty::nurbs::RationalCurve>();
 		if (crv != nullptr) {
-			auto pos_arr = nous::nurbs::util::sample_curve(*crv, 80);
+			auto pos_arr = Geomerty::nurbs::util::sample_curve(*crv, 80);
 			Eigen::MatrixXd TV;
 			Eigen::MatrixXi TE;
 			Eigen::MatrixXd TC;

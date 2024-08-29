@@ -6,8 +6,6 @@
 #include<unordered_map>
 #include <imgui_node_editor.h>
 #include "glviewer/Viewer.h"
-#include "core/surface_mesh.h"
-#include "core/read_mesh.h"
 
 namespace Geomerty {
 	class Graph;

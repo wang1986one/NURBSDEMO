@@ -3,28 +3,13 @@
 #include "core/graph.h"
 #include "UI/Panels/PanelsManager.h"
 #include "core/ServiceLocator.h"
-#include "nodes/nurbssurface_create_node.h"
+#include "nodes/nurbssurface_loadnode.h"
 #include "algorithm/mesh_triangulate.h"
 #include "nurbs/nurbs_evalute_surface.h"
-#include "nurbs/nurbs_make.h"
 #include "nurbs/nurbs_io.h"
 namespace Geomerty {
-	nurbs::RationalSurface* get_loft() {
-		nurbs::RationalSurface* srf = new nurbs::RationalSurface();
-		std::vector<nurbs::RationalCurve>sections;
-		sections.emplace_back(2, std::vector<float>{ 0, 0, 0, 1, 1, 1 }, std::vector<nurbs::util::vec3>{ { 0, 0, 0 }, { 10, 0, 0 }, { 40, 0, 0 } }, std::vector<float>{ 1, 1, 1 });
-		sections.emplace_back(3, std::vector<float>{ 0, 0, 0, 0, 1, 1, 1, 1 }, std::vector<nurbs::util::vec3>{ { 0, 10, 10 }, { 10, 5, 10 }, { 20, -5, 10 }, { 40, 10, 10 } },
-			std::vector<float>{ 1, 1, 1, 1 });
-		sections.emplace_back(3, std::vector<float>{ 0, 0, 0, 0, 1, 1, 1, 1 }, std::vector<nurbs::util::vec3>{ { 0, 0, 20 }, { 10, 0, 20 }, { 20, 5, 20 }, { 40, 0, 20 } },
-			std::vector<float>{ 1, 1, 1, 1, 1 });
-		sections.emplace_back(3, std::vector<float>{ 0, 0, 0, 0, 1, 1, 1, 1 }, std::vector<nurbs::util::vec3>{ { 0, 3, 30 }, { 10, -4, 30 }, { 20, 10, 30 }, { 40, 0, 30 } },
-			std::vector<float>{ 1, 1, 1, 1, 1 });
 
-		nurbs::util::loft_surface(sections, *srf);
-		return srf;
-	}
-
-	void NurbsSurface_Node::InstallUi()
+	void NurbsSurface_LoadNode::InstallUi()
 	{
 		ImGui::InputText("Path", path.data(), 250);
 		if (ImGui::BeginDragDropTarget())
@@ -49,7 +34,7 @@ namespace Geomerty {
 		}
 
 	}
-	void NurbsSurface_Node::Init(Graph* graph)
+	void NurbsSurface_LoadNode::Init(Graph* graph)
 	{
 		path.reserve(250);
 		Outputs.emplace_back(GetNextId(), "OutputSurface", typeid(Geomerty::nurbs::RationalSurface).hash_code(), PinKind::Output);
@@ -57,29 +42,30 @@ namespace Geomerty {
 		graph->registry[Outputs.back().index] = { nullptr,typeid(Geomerty::nurbs::RationalSurface).hash_code() };
 
 	}
-	void NurbsSurface_Node::Execute(ExetContex* ctx)
+	void NurbsSurface_LoadNode::Execute(ExetContex* ctx)
 	{
-		using Vec3 = Geomerty::nurbs::util::vec3;
-		Geomerty::nurbs::RationalSurface* crv = get_loft();
+		if (std::filesystem::exists(path)) {
 
-		ctx->graph->registry[Outputs.back().index].Set<Geomerty::nurbs::RationalSurface>(crv);
+			Geomerty::nurbs::RationalSurface* srf = new Geomerty::nurbs::RationalSurface();
+			*srf = Geomerty::nurbs::util::surfaceReadOBJ(path);
+			ctx->graph->registry[Outputs.back().index].Set<Geomerty::nurbs::RationalSurface>(srf);
 
-		auto& input_manager = Geomerty::ServiceLocator::Get<UI::Panels::PanelsManager>();
-		auto& arr = input_manager.GetPanelAs<Geomerty::ControllerView>("Scene View").arr;
-		input_manager.GetPanelAs<Geomerty::ControllerView>("Scene View").node = this;
-		arr.clear();
-		for (int i = 0; i < crv->m_control_points.size(); i++) {
-			for (auto& it : crv->m_control_points[i]) {
-				arr.emplace_back(&it);
+			auto& input_manager = Geomerty::ServiceLocator::Get<UI::Panels::PanelsManager>();
+			auto& arr = input_manager.GetPanelAs<Geomerty::ControllerView>("Scene View").arr;
+			arr.clear();
+			for (int i = 0; i < srf->m_control_points.size(); i++) {
+				for (auto& it : srf->m_control_points[i]) {
+					arr.emplace_back(&it);
+				}
 			}
 		}
 	}
-	void NurbsSurface_Node::Present(Geomerty::Viewer& viewer)
+	void NurbsSurface_LoadNode::Present(Geomerty::Viewer& viewer)
 	{
 		auto& registry = Geomerty::ServiceLocator::Get<Geomerty::Graph>().registry;
 		auto srf = registry[Outputs.back().index].Get<Geomerty::nurbs::RationalSurface>();
 		if (srf != nullptr) {
-			auto&& [pos_arr, index_arr] = Geomerty::nurbs::util::sample_nurbs_surface(*srf, 20);
+			auto&& [pos_arr, index_arr] = Geomerty::nurbs::util::sample_nurbs_surface(*srf, 80);
 			Eigen::MatrixXd TV;
 			Eigen::MatrixXi TF;
 			Eigen::MatrixXd TC;

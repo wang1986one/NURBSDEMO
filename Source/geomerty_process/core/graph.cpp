@@ -10,6 +10,7 @@
 #include "nodes/nurbs_arc_node.h"
 #include "nodes/nurbscurve_loadnode.h"
 #include "nodes/nurbssurface_create_node.h"
+#include "nodes/nurbssurface_loadnode.h"
 
 void DrawIcon(ImDrawList* drawList, const ImVec2& a, const ImVec2& b, bool filled, ImU32 color, ImU32 innerColor)
 {
@@ -447,7 +448,8 @@ namespace Geomerty {
 				node = SpawnNurbsCurve_LoadNode();
 			if (ImGui::MenuItem("SpawnNurbsSurface_Node"))
 				node = SpawnNurbsSurface_Node();
-
+			if (ImGui::MenuItem("SpawnNurbsSurface_LoadNode"))
+				node = SpawnNurbsSurface_LoadNode();
 			if (node)
 			{
 				createNewNode = false;
@@ -622,6 +624,12 @@ namespace Geomerty {
 	Geomerty::Node* Graph::SpawnNurbsSurface_Node()
 	{
 		m_Nodes.push_back(new Geomerty::NurbsSurface_Node(Geomerty::GetNextId(), "NurbsSurface_Node"));
+		m_Nodes.back()->Init(this);
+		return m_Nodes.back();
+	}
+	Geomerty::Node* Graph::SpawnNurbsSurface_LoadNode()
+	{
+		m_Nodes.push_back(new Geomerty::NurbsSurface_LoadNode(Geomerty::GetNextId(), "NurbsSurface_LoadNode"));
 		m_Nodes.back()->Init(this);
 		return m_Nodes.back();
 	}

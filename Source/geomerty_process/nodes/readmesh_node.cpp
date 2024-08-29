@@ -2,6 +2,8 @@
 #include "nodes/readmesh_node.h"
 #include "core/graph.h"
 #include "algorithm/mesh_triangulate.h"
+#include "core/read_mesh.h"
+
 namespace Geomerty {
 
 	void Read_MeshNode::InstallUi() {

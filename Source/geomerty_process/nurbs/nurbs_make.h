@@ -9,10 +9,6 @@
 
 namespace Geomerty::nurbs::util
 {
-
-
-
-
 	//  make nurbs shapes
 	inline RationalCurve rational_bezier_curve(const std::vector<vec3>& control_points, std::vector<scalar> weights)
 	{
@@ -52,7 +48,7 @@ namespace Geomerty::nurbs::util
 		for (int i = 1; i < control_points.size() - 1; i++)
 		{
 			addsum += (control_points[i] - control_points[i - 1]).norm();
-			knots[i + degree + 1] = addsum / length;
+			knots[i + degree] = addsum / length;
 		}
 
 		RationalCurve crv;

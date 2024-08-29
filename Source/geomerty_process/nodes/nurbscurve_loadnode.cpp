@@ -27,6 +27,7 @@ namespace Geomerty {
 	}
 	void NurbsCurve_LoadNode::Init(Graph* graph)
 	{
+		path.reserve(250);
 
 		Outputs.emplace_back(GetNextId(), "Nurbs_Curve", typeid(Geomerty::nurbs::RationalCurve).hash_code(), PinKind::Output);
 		Outputs.back().Node = this;

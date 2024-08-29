@@ -11,13 +11,60 @@
 namespace Geomerty {
 	void NurbsArc_Node::InstallUi()
 	{
-		//(const vec3& center, vec3 xaxis, vec3 yaxis, scalar start_angle, scalar end_angle)
+		const char* items[] = { "Ellipse", "Polyline", "Bezier" };
+		const char* combo_preview_value = items[item_current_idx];
+		if (ImGui::BeginCombo("Shape Kind", combo_preview_value))
+		{
+			for (int n = 0; n < IM_ARRAYSIZE(items); n++)
+			{
+				const bool is_selected = (item_current_idx == n);
+				if (ImGui::Selectable(items[n], is_selected))
+				{
+					item_current_idx = n;
+				}
+				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
 		bool flag = false;
-		flag |= ImGui::DragFloat3("center", center.data(), 0.01f);
-		flag |= ImGui::DragFloat3("xaxis", xaxis.data(), 0.01f);
-		flag |= ImGui::DragFloat3("yaxis", yaxis.data(), 0.01f);
-		flag |= ImGui::DragFloat("start_angle", &start_angle, 0.001f);
-		flag |= ImGui::DragFloat("end_angle", &end_angle, 0.001f);
+		if (item_current_idx == 0) {
+			flag |= ImGui::DragFloat3("center", center.data(), 0.01f);
+			flag |= ImGui::DragFloat3("xaxis", xaxis.data(), 0.01f);
+			flag |= ImGui::DragFloat3("yaxis", yaxis.data(), 0.01f);
+			flag |= ImGui::DragFloat("start_angle", &start_angle, 0.001f);
+			flag |= ImGui::DragFloat("end_angle", &end_angle, 0.001f);
+		}
+		else if (item_current_idx == 1) {
+			bool localflag = false;
+			localflag |= ImGui::SliderInt("Point num", &num_points, 2, 10);
+			flag |= localflag;
+			if (localflag) {
+				polyline.clear();
+				for (int i = 0; i < num_points; i++) {
+					polyline.emplace_back(Eigen::Vector3<float>(i, i % 2, 0));
+				}
+			}
+		}
+		else if (item_current_idx == 2) {
+			bool localflag = false;
+			localflag |= ImGui::SliderInt("Point num", &num_Berzier_points, 3, 5);
+			flag |= localflag;
+			if (localflag) {
+				Beizer_points.clear();
+				weights.clear();
+				for (int i = 0; i < num_Berzier_points; i++) {
+					Beizer_points.emplace_back(Eigen::Vector3<float>(i, i % 2, 0));
+					weights.emplace_back(1.0f);
+				}
+			}
+			for (int i = 0; i < weights.size(); i++) {
+				std::string temp = "weight" + std::to_string(i);
+				flag |= ImGui::SliderFloat(temp.c_str(), &weights[i], 1.0f, 100.0f);
+			}
+
+		}
 		if (flag) {
 			auto& graph = Geomerty::ServiceLocator::Get<Geomerty::Graph>();
 			Geomerty::ExetContex ctx;
@@ -35,7 +82,19 @@ namespace Geomerty {
 		if (ImGui::Button("Save")) {
 			auto& registry = Geomerty::ServiceLocator::Get<Geomerty::Graph>().registry;
 			auto crv = registry[Outputs.back().index].Get<Geomerty::nurbs::RationalCurve>();
-			Geomerty::nurbs::util::curve_write_obj("C:/Users/Administrator/Desktop/temp/res", *crv);
+			Geomerty::nurbs::util::curve_write_obj(path, *crv);
+		}
+		ImGui::InputText("Path", path.data(), 250);
+		if (ImGui::BeginDragDropTarget())
+		{
+			ImGuiDragDropFlags target_flags = 0;
+			target_flags |= ImGuiDragDropFlags_AcceptNoDrawDefaultRect; // Don't display the yellow rectangle
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("File", target_flags))
+			{
+				auto data = *(std::pair<std::string, UI::Widgets::Layout::Group*>*)payload->Data;
+				path = data.first;
+			}
+			ImGui::EndDragDropTarget();
 		}
 
 	}
@@ -51,11 +110,21 @@ namespace Geomerty {
 	{
 		using Vec3 = Geomerty::nurbs::util::vec3;
 		Geomerty::nurbs::RationalCurve* crv = new Geomerty::nurbs::RationalCurve();
-		*crv = Geomerty::nurbs::util::rational_ellipse_arc_curve(center, xaxis, yaxis, start_angle, end_angle);
+		if (item_current_idx == 0) {
+			*crv = Geomerty::nurbs::util::rational_ellipse_arc_curve(center, xaxis, yaxis, start_angle, end_angle);
+		}
+		else if (item_current_idx == 1) {
+			*crv = Geomerty::nurbs::util::rational_polyline_curve(polyline);
+		}
+		else if (item_current_idx == 2) {
+			*crv = Geomerty::nurbs::util::rational_bezier_curve(Beizer_points, weights);
+		}
+
 		ctx->graph->registry[Outputs.back().index].Set<Geomerty::nurbs::RationalCurve>(crv);
 
 		auto& input_manager = Geomerty::ServiceLocator::Get<UI::Panels::PanelsManager>();
 		auto& arr = input_manager.GetPanelAs<Geomerty::ControllerView>("Scene View").arr;
+		input_manager.GetPanelAs<Geomerty::ControllerView>("Scene View").node = this;
 		arr.clear();
 		for (auto& it : crv->m_control_points) {
 			arr.emplace_back(&it);
@@ -92,7 +161,7 @@ namespace Geomerty {
 			cc.row(0) << 0, 1, 1;
 			viewer.data(0).clear();
 			viewer.data(0).set_points(TTV, cc);
-			viewer.data(0).point_size = 3;
+			viewer.data(0).point_size = 10;
 			viewer.data(0).set_edges(TV, TE, TC);
 			viewer.data(0).line_width = 1;
 

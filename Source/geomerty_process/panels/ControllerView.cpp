@@ -139,6 +139,10 @@ namespace Geomerty {
 	void ControllerView::Update(float p_deltaTime)
 	{
 		AView::Update(p_deltaTime);
+		if (node && node_flag) {
+			node->Present(viewer);
+			node_flag = false;
+		}
 
 		//Intersection(arr);
 		if (IsHovered() && !ImGui::IsKeyDown(ImGuiKey_::ImGuiKey_Space)) {
@@ -165,6 +169,7 @@ namespace Geomerty {
 	//to do :split
 	void ControllerView::Intersection(std::vector<vec3*>& pos_arr)
 	{
+		node_flag = false;
 		auto mpos = ImGui::GetMousePos();
 		auto [lx, ly] = GetPosition();
 		float rx = mpos.x - lx;
@@ -192,7 +197,7 @@ namespace Geomerty {
 		Ray ray(src, dir);
 		static int index = -1;
 		if (ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Right)) {
-			index = IntersectionWithSphere(ray, 1.1f, pos_arr);
+			index = IntersectionWithSphere(ray, 0.15f, pos_arr);
 		}
 		if (index != -1) {
 			auto [winWidth, winHeight] = GetSafeSize();
@@ -203,8 +208,9 @@ namespace Geomerty {
 			ImGuizmo::SetRect(lx, ly + 25, winWidth, winHeight);
 			ImGuizmo::SetOrthographic(false);
 			ImGuizmo::SetDrawlist();
-			ImGuizmo::Manipulate(model.data(), proj.data(), ImGuizmo::TRANSLATE, ImGuizmo::LOCAL, xform, NULL, NULL);
+			node_flag |= ImGuizmo::Manipulate(model.data(), proj.data(), ImGuizmo::TRANSLATE, ImGuizmo::LOCAL, xform, NULL, NULL);
 			ImGuizmo::DecomposeMatrixToComponents(xform, pos_arr[index]->data(), matrixRotation, matrixScale);
+
 		}
 	}
 	void ControllerView::_Render_Impl()

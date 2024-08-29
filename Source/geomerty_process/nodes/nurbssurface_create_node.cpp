@@ -70,7 +70,7 @@ namespace Geomerty {
 		arr.clear();
 		for (int i = 0; i < crv->m_control_points.size(); i++) {
 			for (auto& it : crv->m_control_points[i]) {
-				//arr.emplace_back(&it);
+				arr.emplace_back(&it);
 			}
 		}
 	}
@@ -124,6 +124,7 @@ namespace Geomerty {
 			TC.row(0) << 1, 1, 0;
 			viewer.data(0).set_points(TP, TC);
 			viewer.data(0).line_width = 2;
+			viewer.data(0).point_size = 10;
 		}
 	}
 }

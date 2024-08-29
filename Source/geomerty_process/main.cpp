@@ -42,7 +42,7 @@ int main()
 	device->SetVsync(true);
 
 	//≥ı ºªØUI
-	uiManager = std::make_unique<UI::Core::UIManager>(window->GetGlfwWindow(), UI::Styling::EStyle::ALTERNATIVE_DARK);;
+	uiManager = std::make_unique<UI::Core::UIManager>(window->GetGlfwWindow(), UI::Styling::EStyle::CUSTOM);;
 	uiManager->LoadFont("Ruda_Big", "Res/Font/Ruda-Bold.ttf", 25);
 	uiManager->LoadFont("Ruda_Small", "Res/Font/Ruda-Bold.ttf", 12);
 	uiManager->LoadFont("Ruda_Medium", "Res/Font/Ruda-Bold.ttf", 14);

@@ -36,7 +36,7 @@ namespace Geomerty
 			{
 				int n = through_points.size();
 				scalar length = 0.0f;
-				for (int i = i; i < n; i++)
+				for (int i = 1; i < n; i++)
 				{
 					length += (through_points[i] - through_points[i - 1]).norm();
 				}

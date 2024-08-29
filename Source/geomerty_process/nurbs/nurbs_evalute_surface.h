@@ -7,6 +7,7 @@
 #include "nurbs_curve.h"
 #include "nurbs_surface.h"
 #include "nurbs_util.h"
+#include "mesh/range.h"
 
 namespace Geomerty
 {
@@ -158,29 +159,25 @@ namespace Geomerty
 			inline T surface_point(const size_t degree_u, const size_t degree_v, const std::vector<scalar>& knots_u, const std::vector<scalar>& knots_v,
 				const std::vector<std::vector<T>>& control_points, scalar u, scalar v)
 			{
-				// Initialize result to 0s
-				if constexpr (is_eigen_mat_v<T>)
+				T point = T::Zero();
+				// Find span and non-zero basis functions
+				int span_u = find_span(degree_u, knots_u, u);
+				int span_v = find_span(degree_v, knots_v, v);
+				std::vector<scalar> nu = bspline_basis(degree_u, span_u, knots_u, u);
+				std::vector<scalar> nv = bspline_basis(degree_v, span_v, knots_v, v);
+
+				for (auto l : IndexRange(degree_v + 1))
 				{
-					T point = T::Zero();
-					// Find span and non-zero basis functions
-					int span_u = find_span(degree_u, knots_u, u);
-					int span_v = find_span(degree_v, knots_v, v);
-					std::vector<scalar> nu = bspline_basis(degree_u, span_u, knots_u, u);
-					std::vector<scalar> nv = bspline_basis(degree_v, span_v, knots_v, v);
-
-					for (auto l : IndexRange(degree_v + 1))
+					T temp = T::Zero();
+					for (auto k : IndexRange(degree_u + 1))
 					{
-						T temp = T::Zero();
-						for (auto k : IndexRange(degree_u + 1))
-						{
-							temp += nu[k] * control_points[span_u - degree_u + k][span_v - degree_v + l];
-						}
-
-						point += nv[l] * temp;
+						temp += nu[k] * control_points[span_u - degree_u + k][span_v - degree_v + l];
 					}
-					return point;
+
+					point += nv[l] * temp;
 				}
-				return T();
+				return point;
+
 			}
 
 			/**
@@ -199,47 +196,45 @@ namespace Geomerty
 			inline std::vector<std::vector<T>> surface_derivatives(const size_t degree_u, const size_t degree_v, const std::vector<scalar>& knots_u, const std::vector<scalar>& knots_v,
 				const std::vector<std::vector<T>>& control_points, size_t num_ders, scalar u, scalar v)
 			{
-				if constexpr (is_eigen_mat_v<T>)
+
+				std::vector<std::vector<T>> surf_ders(num_ders + 1, std::vector<T>(num_ders + 1, T::Zero()));
+
+				// Find span and basis function derivatives
+				scalar span_u = find_span(degree_u, knots_u, u);
+				scalar span_v = find_span(degree_v, knots_v, v);
+				std::vector<std::vector<scalar>> ders_u = bspline_der_basis(degree_u, span_u, knots_u, u, num_ders);
+				std::vector<std::vector<scalar>> ders_v = bspline_der_basis(degree_v, span_v, knots_v, v, num_ders);
+
+				// Number of non-zero derivatives is <= degree
+				size_t du = num_ders > degree_u ? degree_u : num_ders;
+
+				size_t dv = num_ders > degree_v ? degree_v : num_ders;
+
+				// Compute derivatives
+				for (auto k : IndexRange(du + 1))
 				{
-					std::vector<std::vector<T>> surf_ders(num_ders + 1, std::vector<T>(num_ders + 1, T::Zero()));
-
-					// Find span and basis function derivatives
-					scalar span_u = find_span(degree_u, knots_u, u);
-					scalar span_v = find_span(degree_v, knots_v, v);
-					std::vector<std::vector<scalar>> ders_u = bspline_der_basis(degree_u, span_u, knots_u, u, num_ders);
-					std::vector<std::vector<scalar>> ders_v = bspline_der_basis(degree_v, span_v, knots_v, v, num_ders);
-
-					// Number of non-zero derivatives is <= degree
-					size_t du = num_ders > degree_u ? degree_u : num_ders;
-
-					size_t dv = num_ders > degree_v ? degree_v : num_ders;
-
-					// Compute derivatives
-					for (auto k : IndexRange(du + 1))
+					std::vector<T> temp;
+					temp.resize(degree_v + 1, T::Zero());
+					for (auto s : IndexRange(degree_v + 1))
 					{
-						std::vector<T> temp;
-						temp.resize(degree_v + 1, T::Zero());
-						for (auto s : IndexRange(degree_v + 1))
+						for (auto r : IndexRange(degree_u + 1))
 						{
-							for (auto r : IndexRange(degree_u + 1))
-							{
-								temp[s] += ders_u[k][r] * control_points[span_u - degree_u + r][span_v - degree_v + s];
-							}
-						}
-
-						int dd = (num_ders - k) > dv ? dv : num_ders - k;
-
-						for (auto l : IndexRange(dd + 1))
-						{
-							for (auto s : IndexRange(degree_v + 1))
-							{
-								surf_ders[k][l] += ders_v[l][s] * temp[s];
-							}
+							temp[s] += ders_u[k][r] * control_points[span_u - degree_u + r][span_v - degree_v + s];
 						}
 					}
-					return surf_ders;
+
+					int dd = (num_ders - k) > dv ? dv : num_ders - k;
+
+					for (auto l : IndexRange(dd + 1))
+					{
+						for (auto s : IndexRange(degree_v + 1))
+						{
+							surf_ders[k][l] += ders_v[l][s] * temp[s];
+						}
+					}
 				}
-				return std::vector<std::vector<T>>{};
+				return surf_ders;
+
 			}
 
 			/**
@@ -932,7 +927,7 @@ namespace Geomerty
 					{
 						const float u = ix * seg;
 						const float v = iy * seg;
-						point_arr[ix + iy * (segments + 1)] = nous::nurbs::util::surface_point(srf, u, v);
+						point_arr[ix + iy * (segments + 1)] = surface_point(srf, u, v);
 					}
 				}
 

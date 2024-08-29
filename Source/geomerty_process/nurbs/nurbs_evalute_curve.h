@@ -550,7 +550,7 @@ namespace Geomerty::nurbs::util
 
 			int span_index = find_span(degree, knot_vector, uk[i]);
 			std::vector<scalar> basis = bspline_basis(degree, span_index, knot_vector, uk[i]);
-			for (int j = 0; i < degree + 1; j++)
+			for (int j = 0; j < degree + 1; j++)
 			{
 				A(i, span_index - degree + j) = basis[j];
 			}

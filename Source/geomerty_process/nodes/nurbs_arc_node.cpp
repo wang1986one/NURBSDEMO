@@ -7,6 +7,7 @@
 #include "algorithm/mesh_triangulate.h"
 #include "nurbs/nurbs_evalute_curve.h"
 #include "nurbs/nurbs_make.h"
+#include "nurbs/nurbs_io.h"
 namespace Geomerty {
 	void NurbsArc_Node::InstallUi()
 	{
@@ -31,6 +32,12 @@ namespace Geomerty {
 			auto& input_manager = Geomerty::ServiceLocator::Get<UI::Panels::PanelsManager>();
 			Present(input_manager.GetPanelAs<Geomerty::ControllerView>("Scene View").viewer);
 		}
+		if (ImGui::Button("Save")) {
+			auto& registry = Geomerty::ServiceLocator::Get<Geomerty::Graph>().registry;
+			auto crv = registry[Outputs.back().index].Get<Geomerty::nurbs::RationalCurve>();
+			Geomerty::nurbs::util::curve_write_obj("C:/Users/Administrator/Desktop/temp/res", *crv);
+		}
+
 	}
 	void NurbsArc_Node::Init(Graph* graph)
 	{
@@ -50,7 +57,10 @@ namespace Geomerty {
 		auto& input_manager = Geomerty::ServiceLocator::Get<UI::Panels::PanelsManager>();
 		auto& arr = input_manager.GetPanelAs<Geomerty::ControllerView>("Scene View").arr;
 		arr.clear();
-		arr.emplace_back(&(crv->m_control_points));
+		for (auto& it : crv->m_control_points) {
+			arr.emplace_back(&it);
+		}
+
 
 	}
 	void NurbsArc_Node::Present(Geomerty::Viewer& viewer)
@@ -72,9 +82,6 @@ namespace Geomerty {
 					TC.row(i - 1) << 1, 1, 1;
 				}
 			}
-
-			viewer.data(0).clear();
-			viewer.data(0).set_points(TV, Eigen::RowVector3d(1, 1, 0));
 			Eigen::MatrixXd TTV;
 			TTV.resize(crv->m_control_points.size(), 3);
 			for (int i = 0; i < crv->m_control_points.size(); i++) {
@@ -83,11 +90,12 @@ namespace Geomerty {
 			Eigen::MatrixXd cc;
 			cc.resize(1, 3);
 			cc.row(0) << 0, 1, 1;
-			viewer.data(0).add_points(TTV, cc);
-			viewer.data(0).point_size = 10;
+			viewer.data(0).clear();
+			viewer.data(0).set_points(TTV, cc);
+			viewer.data(0).point_size = 3;
 			viewer.data(0).set_edges(TV, TE, TC);
-			viewer.data(0).line_width = 2;
-			// get properties
+			viewer.data(0).line_width = 1;
+
 		}
 	}
 }

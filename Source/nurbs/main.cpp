@@ -71,6 +71,7 @@ static void glfw_window_size(GLFWwindow* /*window*/, int width, int height)
 
 static void glfw_mouse_move(GLFWwindow* /*window*/, double x, double y)
 {
+	std::cout << "(" << x * highdpiw << "," << y * highdpih << ")" << std::endl;
 	viewer.mouse_move(x * highdpiw, y * highdpih);
 }
 

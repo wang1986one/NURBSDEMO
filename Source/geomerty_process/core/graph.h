@@ -44,6 +44,8 @@ namespace Geomerty {
 		Geomerty::Node* SpawnSpape_Node();
 		Geomerty::Node* SpawnParametrization_Node();
 		Geomerty::Node* SpawnNurbsArc_Node();
+		Geomerty::Node* SpawnNurbsCurve_LoadNode();
+		Geomerty::Node* SpawnNurbsSurface_Node();
 		int GetSelectNode();
 		void OnStart() {
 

@@ -14,9 +14,9 @@ namespace Geomerty {
 			const UI::Settings::PanelWindowSettings& p_windowSettings
 		);
 		void Update(float p_deltaTime)override;
-		void Intersection(std::vector<vec3>& pos_arr);
+		void Intersection(std::vector<vec3*>& pos_arr);
 
-		std::vector<std::vector<vec3>*>arr;
+		std::vector<vec3*>arr;
 		void _Render_Impl()override;
 		void  _Draw_ImplInWindow()  override;
 	public:

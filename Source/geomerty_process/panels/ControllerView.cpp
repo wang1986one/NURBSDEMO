@@ -110,12 +110,12 @@ public:
 	/// Ray direction.
 	vec3 direction_;
 };
-int IntersectionWithSphere(const Ray& ray, const float radius, const std::vector<vec3>& arr) {
+int IntersectionWithSphere(const Ray& ray, const float radius, const std::vector<vec3*>& arr) {
 	float dis = std::numeric_limits<float>::infinity();
 	int index = -1;
 	for (int i = 0; i < arr.size(); i++) {
 		float tm = 0.0f;
-		if (ray.HitDistance(arr[i], radius, tm)) {
+		if (ray.HitDistance(*arr[i], radius, tm)) {
 			if (tm < dis) {
 				index = i;
 				dis = tm;
@@ -158,11 +158,12 @@ namespace Geomerty {
 				viewer.mouse_up(Geomerty::Viewer::MouseButton::Right);
 			auto [x, y] = inputManager.GetMousePosition();
 			auto [lx, ly] = GetPosition();
-			viewer.mouse_move(x - lx, y - ly);
+			viewer.mouse_move(x - lx, y - ly - 25.0);
 		}
 
 	}
-	void ControllerView::Intersection(std::vector<vec3>& pos_arr)
+	//to do :split
+	void ControllerView::Intersection(std::vector<vec3*>& pos_arr)
 	{
 		auto mpos = ImGui::GetMousePos();
 		auto [lx, ly] = GetPosition();
@@ -170,6 +171,8 @@ namespace Geomerty {
 		float ry = mpos.y - ly - 25;
 		const Eigen::Vector2f pos(
 			rx, viewer.core().viewport(3) - ry);
+		auto [winWidth, winHeight] = GetSafeSize();
+
 		const auto model = viewer.core().view;
 		const auto proj = viewer.core().proj;
 		const auto viewport = viewer.core().viewport;
@@ -189,19 +192,19 @@ namespace Geomerty {
 		Ray ray(src, dir);
 		static int index = -1;
 		if (ImGui::IsMouseClicked(ImGuiMouseButton_::ImGuiMouseButton_Right)) {
-			index = IntersectionWithSphere(ray, 2.1f, pos_arr);
+			index = IntersectionWithSphere(ray, 1.1f, pos_arr);
 		}
 		if (index != -1) {
 			auto [winWidth, winHeight] = GetSafeSize();
 			float xform[16] = {
 			};
 			float matrixRotation[3] = { 0,0,0 }, matrixScale[3] = { 1,1,1 };
-			ImGuizmo::RecomposeMatrixFromComponents(pos_arr[index].data(), matrixRotation, matrixScale, xform);
+			ImGuizmo::RecomposeMatrixFromComponents(pos_arr[index]->data(), matrixRotation, matrixScale, xform);
 			ImGuizmo::SetRect(lx, ly + 25, winWidth, winHeight);
 			ImGuizmo::SetOrthographic(false);
 			ImGuizmo::SetDrawlist();
 			ImGuizmo::Manipulate(model.data(), proj.data(), ImGuizmo::TRANSLATE, ImGuizmo::LOCAL, xform, NULL, NULL);
-			ImGuizmo::DecomposeMatrixToComponents(xform, pos_arr[index].data(), matrixRotation, matrixScale);
+			ImGuizmo::DecomposeMatrixToComponents(xform, pos_arr[index]->data(), matrixRotation, matrixScale);
 		}
 	}
 	void ControllerView::_Render_Impl()
@@ -214,9 +217,9 @@ namespace Geomerty {
 	{
 
 		//ImGui::Text("hellow");
-		for (auto it : arr) {
-			if (it)
-				Intersection(*it);
+		if (!arr.empty()) {
+			Intersection(arr);
 		}
+
 	}
 }

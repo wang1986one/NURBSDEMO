@@ -27,7 +27,8 @@ void RenameAsset(const std::string& p_prev, const std::string& p_new)
 static bool ImportAssetAtLocation(const std::string& p_destination)
 {
 	using namespace Windowing::Dialogs;
-	std::string modelFormats = "*.fbx;*.obj;*.off";
+
+	std::string modelFormats = "*.fbx;*.obj;*.off;*.*";
 	std::string textureFormats = "*.png;*.jpeg;*.jpg;*.tga;";
 	OpenFileDialog selectAssetDialog("Select an asset to import");
 	selectAssetDialog.AddFileType("Any supported format", modelFormats + textureFormats);
@@ -313,7 +314,7 @@ namespace Geomerty {
 		Tools::Utils::PathParser::EFileType fileType = Tools::Utils::PathParser::GetFileType(itemname);
 		if (fileType == Tools::Utils::PathParser::EFileType::UNKNOWN && !isDirectory)
 		{
-			return;
+			//return;
 		}
 		auto& itemGroup = p_root ? p_root->CreateWidget<UI::Widgets::Layout::Group>() : m_assetList->CreateWidget<UI::Widgets::Layout::Group>();
 		auto tid = CreateFromMemory();

@@ -11,6 +11,7 @@
 #include "nodes/nurbscurve_loadnode.h"
 #include "nodes/nurbssurface_create_node.h"
 #include "nodes/nurbssurface_loadnode.h"
+#include "nodes/nurbscurve_bendnode.h"
 
 void DrawIcon(ImDrawList* drawList, const ImVec2& a, const ImVec2& b, bool filled, ImU32 color, ImU32 innerColor)
 {
@@ -444,12 +445,15 @@ namespace Geomerty {
 				node = SpawnParametrization_Node();
 			if (ImGui::MenuItem("NurbsArc"))
 				node = SpawnNurbsArc_Node();
-			if (ImGui::MenuItem("SpawnNurbsCurve_LoadNode"))
+			if (ImGui::MenuItem("NurbsCurve_LoadNode"))
 				node = SpawnNurbsCurve_LoadNode();
-			if (ImGui::MenuItem("SpawnNurbsSurface_Node"))
+			if (ImGui::MenuItem("NurbsSurface_Node"))
 				node = SpawnNurbsSurface_Node();
-			if (ImGui::MenuItem("SpawnNurbsSurface_LoadNode"))
+			if (ImGui::MenuItem("NurbsSurface_LoadNode"))
 				node = SpawnNurbsSurface_LoadNode();
+			if (ImGui::MenuItem("BendCurve_LoadNode"))
+				node = SpawnBendCurve_LoadNode();
+
 			if (node)
 			{
 				createNewNode = false;
@@ -630,6 +634,12 @@ namespace Geomerty {
 	Geomerty::Node* Graph::SpawnNurbsSurface_LoadNode()
 	{
 		m_Nodes.push_back(new Geomerty::NurbsSurface_LoadNode(Geomerty::GetNextId(), "NurbsSurface_LoadNode"));
+		m_Nodes.back()->Init(this);
+		return m_Nodes.back();
+	}
+	Geomerty::Node* Graph::SpawnBendCurve_LoadNode()
+	{
+		m_Nodes.push_back(new Geomerty::NurbsCurve_BendNode(Geomerty::GetNextId(), "NurbsCurve_BendNode"));
 		m_Nodes.back()->Init(this);
 		return m_Nodes.back();
 	}

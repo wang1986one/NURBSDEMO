@@ -12,7 +12,7 @@ namespace Geomerty
 			using vec3 = Eigen::Vector3<scalar>;
 			using vec4 = Eigen::Vector4<scalar>;
 			using AABB3 = Eigen::AlignedBox<scalar, 3>;
-			inline constexpr float N_FLOAT_PI = 3.1415926535897932385f;
+			inline constexpr scalar N_FLOAT_PI = 3.1415926535897932385f;
 			inline constexpr scalar N_SCALAR_EPSILON = std::numeric_limits<scalar>::epsilon();
 			/**
 			 * Checks if the relation between degree, number of knots, and
@@ -223,6 +223,10 @@ namespace Geomerty
 				scalar eps = (abs(a) + abs(b) + 10) * N_SCALAR_EPSILON;
 				scalar delta = a - b;
 				return (-eps < delta) && (eps > delta);
+			}
+			inline bool is_almost_equal(vec3 a, vec3 b)
+			{
+				return is_almost_equal(a[0], b[0]) && is_almost_equal(a[1], b[1]) && is_almost_equal(a[2], b[2]);
 			}
 
 			/**

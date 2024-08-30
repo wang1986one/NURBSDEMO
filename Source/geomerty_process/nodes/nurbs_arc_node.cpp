@@ -63,7 +63,6 @@ namespace Geomerty {
 				std::string temp = "weight" + std::to_string(i);
 				flag |= ImGui::SliderFloat(temp.c_str(), &weights[i], 1.0f, 100.0f);
 			}
-
 		}
 		if (flag) {
 			auto& graph = Geomerty::ServiceLocator::Get<Geomerty::Graph>();
@@ -96,7 +95,6 @@ namespace Geomerty {
 			}
 			ImGui::EndDragDropTarget();
 		}
-
 	}
 	void NurbsArc_Node::Init(Graph* graph)
 	{
@@ -111,7 +109,8 @@ namespace Geomerty {
 		using Vec3 = Geomerty::nurbs::util::vec3;
 		Geomerty::nurbs::RationalCurve* crv = new Geomerty::nurbs::RationalCurve();
 		if (item_current_idx == 0) {
-			*crv = Geomerty::nurbs::util::rational_ellipse_arc_curve(center, xaxis, yaxis, start_angle, end_angle);
+			Geomerty::nurbs::util::CreateArc(center, xaxis, yaxis, start_angle, end_angle, xaxis.norm(), yaxis.norm(), *crv);
+			//*crv = Geomerty::nurbs::util::rational_ellipse_arc_curve(center, xaxis, yaxis, start_angle, end_angle);
 		}
 		else if (item_current_idx == 1) {
 			*crv = Geomerty::nurbs::util::rational_polyline_curve(polyline);
@@ -121,7 +120,6 @@ namespace Geomerty {
 		}
 
 		ctx->graph->registry[Outputs.back().index].Set<Geomerty::nurbs::RationalCurve>(crv);
-
 		auto& input_manager = Geomerty::ServiceLocator::Get<UI::Panels::PanelsManager>();
 		auto& arr = input_manager.GetPanelAs<Geomerty::ControllerView>("Scene View").arr;
 		input_manager.GetPanelAs<Geomerty::ControllerView>("Scene View").node = this;

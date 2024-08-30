@@ -1,7 +1,6 @@
 #pragma once
 #include "core/nodes.h"
-#include "core/surface_mesh.h"
-#include "core/read_mesh.h"
+
 
 namespace Geomerty {
 	class NurbsArc_Node :public Node {
@@ -10,9 +9,9 @@ namespace Geomerty {
 		int item_current_idx = 0;
 
 		//(const vec3& center, vec3 xaxis, vec3 yaxis, scalar start_angle, scalar end_angle)
-		vec3 center{ 0,0,0 };
-		vec3 xaxis{ 1,0,0 };
-		vec3 yaxis{ 0,1,0 };
+		Eigen::Vector3<float> center{ 0,0,0 };
+		Eigen::Vector3<float> xaxis{ 1,0,0 };
+		Eigen::Vector3<float> yaxis{ 0,1,0 };
 		float start_angle{ 0.0 };
 		float end_angle{ 6.28 };
 
@@ -22,7 +21,6 @@ namespace Geomerty {
 		int num_Berzier_points = 3;
 		std::vector< Eigen::Vector3<float>>Beizer_points;
 		std::vector<float>weights;
-
 	public:
 		NurbsArc_Node(int id, const char* name, ImColor color = ImColor(255, 255, 255)) :Node(id, name, color) {
 			weights.reserve(3);

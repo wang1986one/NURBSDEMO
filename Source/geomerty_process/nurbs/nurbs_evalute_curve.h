@@ -578,6 +578,9 @@ namespace Geomerty::nurbs::util
 		crv.m_control_points.swap(control_points);
 		crv.m_weights.swap(weight);
 	}
+
+
+	//
 	inline void elevate_degree(const RationalCurve& curve, int times, RationalCurve& result)
 	{
 		int degree = curve.m_degree;
@@ -870,5 +873,644 @@ namespace Geomerty::nurbs::util
 		}
 		return close_point;
 	}
+	/*
+	*
+	*/
+	//
 
-}// namespace nous::nurbs::util
+	/*
+	*+++
+	*/
+	enum CurveCurveIntersectionType
+	{
+		Intersecting = 0,
+		Parallel = 1,
+		Coincident = 2,
+		Skew = 3,
+	};
+	inline CurveCurveIntersectionType ComputeRays(const vec3& point0, const vec3& vector0, const vec3& point1, const vec3& vector1, scalar& param0, scalar& param1, vec3& intersectPoint)
+	{
+
+
+		vec3 v0 = const_cast<vec3&>(vector0);
+		vec3 v1 = const_cast<vec3&>(vector1);
+
+		vec3 cross = v0.cross(v1);
+		vec3 diff = point1 - point0;
+		vec3 coinCross = diff.cross(v1);
+
+		if (cross.isApprox(vec3::Zero()))
+		{
+			if (coinCross.isApprox(vec3::Zero()))
+			{
+				return CurveCurveIntersectionType::Coincident;
+			}
+			else
+			{
+				return CurveCurveIntersectionType::Parallel;
+			}
+		}
+
+		scalar crossLength = cross.norm();
+		scalar squareLength = crossLength * crossLength;
+
+		vec3 pd1Cross = diff.cross(vector1);
+		scalar pd1Dot = pd1Cross.dot(cross);
+		param0 = pd1Dot / squareLength;
+
+		vec3 pd2Cross = diff.cross(vector0);
+		scalar pd2Dot = pd2Cross.dot(cross);
+		param1 = pd2Dot / squareLength;
+
+		vec3 rayP0 = point0 + vector0 * param0;
+		vec3 rayP1 = point1 + vector1 * param1;
+
+		if (is_almost_equal(rayP0, rayP1))
+		{
+			intersectPoint = rayP0;
+			return CurveCurveIntersectionType::Intersecting;
+		}
+		return CurveCurveIntersectionType::Skew;
+	}
+	inline std::vector<scalar> rescale(const std::vector<scalar>& knotVector, scalar min, scalar max)
+	{
+		scalar origintMin = knotVector[0];
+		scalar origintMax = knotVector.back();
+		scalar k = (max - min) / (origintMax - origintMin);
+
+		int size = knotVector.size();
+		std::vector<scalar> result(size);
+		for (int i = 0; i < size; i++)
+		{
+			result[i] = (k * knotVector[i] - origintMin) + min;
+		}
+		return result;
+	}
+	inline void reparametrize(const RationalCurve& curve, scalar min, scalar max, RationalCurve& result)
+	{
+		std::vector<scalar> knotVector = curve.m_knots;
+		if (is_almost_equal(min, knotVector[0]) && is_almost_equal(max, knotVector[knotVector.size() - 1]))
+		{
+			result = curve;
+			return;
+		}
+
+		std::vector<scalar> newKnotVector = rescale(knotVector, min, max);
+		result = curve;
+		result.m_knots = newKnotVector;
+	}
+	inline std::map<scalar, int> GetKnotMultiplicityMap(const std::vector<scalar>& knotVector)
+	{
+		std::map<scalar, int> result;
+
+		for (int i = 0; i < knotVector.size(); i++)
+		{
+			scalar knot = knotVector[i];
+			auto got = result.find(knot);
+			if (got == result.end())
+			{
+
+				int multi = knot_multiplicity(knotVector, knotVector[i]);
+				result.insert(std::make_pair(knotVector[i], multi));
+			}
+		}
+		return result;
+	}
+	inline std::map<scalar, int> GetInternalKnotMultiplicityMap(const std::vector<scalar>& knotVector)
+	{
+		auto result = GetKnotMultiplicityMap(knotVector);
+		if (!result.empty())
+		{
+			result.erase(result.begin());
+			auto lastElementIterator = prev(result.end(), 1);
+			result.erase(lastElementIterator);
+		}
+		return result;
+	}
+	inline bool merge(const RationalCurve& left, const RationalCurve& right, RationalCurve& result) {
+
+		int degree_L = left.m_degree;
+		std::vector<scalar> knotVector_L = left.m_knots;
+		std::vector<vec3> controlPoints_L = left.m_control_points;
+		std::vector<scalar>controlPoints_L_w = left.m_weights;
+
+		int degree_R = right.m_degree;
+		std::vector<scalar> knotVector_R = right.m_knots;
+		std::vector<vec3> controlPoints_R = right.m_control_points;
+		std::vector<scalar>controlPoints_R_w = right.m_weights;
+		if (!is_almost_equal(controlPoints_L.back() / controlPoints_L_w.back(), controlPoints_R[0] / controlPoints_R_w[0]))
+		{
+			return false;
+		}
+
+		int degree = std::max(degree_L, degree_R);
+		RationalCurve  tempL;
+		reparametrize(left, 0.0, 1.0, tempL);
+		if (degree > degree_L)
+		{
+			int times = degree - degree_L;
+			elevate_degree(left, times, tempL);
+		}
+
+		RationalCurve tempR;
+		reparametrize(right, 0.0, 1.0, tempR);
+		if (degree > degree_R)
+		{
+			int times = degree - degree_R;
+			elevate_degree(right, times, tempR);
+		}
+
+
+		int l = knot_multiplicity(tempL.m_knots, tempL.m_knots.back());
+		int r = knot_multiplicity(tempR.m_knots, tempR.m_knots[0]);
+
+		if (l != degree + 1 || r != degree + 1)
+		{
+			return false;
+		}
+
+		int size = tempL.m_control_points.size() + tempR.m_control_points.size() - 1;
+		std::vector<vec3> controlPoints(size);
+		std::vector<scalar>controlPoints_w(size);
+		int ksize = size + degree + 1;
+		std::vector<scalar> knotVector(ksize);
+
+		int i;
+		for (i = 0; i < tempL.m_control_points.size(); i++)
+		{
+			controlPoints[i] = tempL.m_control_points[i];
+			controlPoints_w[i] = tempL.m_weights[i];
+		}
+
+		for (; i < size; i++)
+		{
+			controlPoints[i] = tempR.m_control_points[i - tempL.m_control_points.size() + 1];
+			controlPoints_w[i] = tempR.m_weights[i - tempL.m_control_points.size() + 1];
+		}
+
+		scalar kl = tempL.m_knots[tempL.m_knots.size() - 1];
+		for (i = 0; i < degree + 1; i++)
+		{
+			knotVector[i] = tempL.m_knots[0];
+			knotVector[ksize - i - 1] = kl + tempR.m_knots[tempR.m_knots.size() - 1];
+		}
+
+		for (int j = 0; j < degree; j++, i++)
+		{
+			knotVector[i] = kl;
+		}
+
+		auto map = GetInternalKnotMultiplicityMap(tempR.m_knots);
+		for (auto it = map.begin(); it != map.end(); it++)
+		{
+			for (int j = 0; j < degree; j++, i++)
+			{
+				knotVector[i] = kl + it->first;
+			}
+		}
+
+		result.m_degree = degree;
+		result.m_knots = knotVector;
+		result.m_control_points = controlPoints;
+		result.m_weights = controlPoints_w;
+		return true;
+	}
+	inline scalar GetCentripetalLength(const std::vector<vec3>& throughPoints)
+	{
+		int size = throughPoints.size();
+		int n = size - 1;
+
+		scalar length = 0.0;
+		for (int i = 1; i <= n; i++)
+		{
+			length += std::sqrt((throughPoints[i] - throughPoints[i - 1]).norm());
+		}
+		return length;
+	}
+	inline std::vector<scalar> GetCentripetalParameterization(const std::vector<vec3>& throughPoints)
+	{
+		int size = throughPoints.size();
+		int n = size - 1;
+
+		std::vector<scalar> uk(size, 0.0);
+		uk[n] = 1.0;
+
+		scalar d = GetCentripetalLength(throughPoints);
+		for (int i = 1; i <= n - 1; i++)
+		{
+			uk[i] = uk[i - 1] + std::sqrt((throughPoints[i] - throughPoints[i - 1]).norm()) / d;
+		}
+		return uk;
+	}
+	inline void CreateCubicHermite(const std::vector<vec3>& throughPoints, const std::vector<vec3>& tangents, RationalCurve& curve)
+	{
+		int n = throughPoints.size();
+
+		vec3 startPoint = throughPoints[0];
+		vec3 endPoint = throughPoints[throughPoints.size() - 1];
+
+		std::vector<scalar> uk = GetCentripetalParameterization(throughPoints);
+
+		bool isCyclePoint = is_almost_equal(startPoint, endPoint);
+		vec3 startTangent = tangents[0];
+		vec3 endTangent = tangents[tangents.size() - 1];
+		bool isCycleTangent = is_almost_equal(startTangent, endTangent);
+
+		int kn = 2 * n;
+		int knotSize = kn + 3 + 1;
+		std::vector<scalar> knotVector(knotSize);
+		for (int i = 2, j = 0; i < kn + 2; i += 2, j++)
+		{
+			knotVector[i] = knotVector[i + 1] = uk[j];
+		}
+
+		if (isCyclePoint && isCycleTangent)
+		{
+			knotVector[0] = knotVector[1] = uk[0] - (uk[n - 1] - uk[n - 2]);
+			knotVector[kn + 2] = knotVector[kn + 3] = uk[n - 1] + uk[1] - uk[0];
+		}
+		else if (isCyclePoint && !isCycleTangent)
+		{
+			knotVector[0] = uk[0] - (uk[n - 1] - uk[n - 2]);
+			knotVector[1] = knotVector[2];
+			knotVector[kn + 2] = knotVector[kn];
+			knotVector[kn + 3] = uk[n - 1] + uk[1] - uk[0];
+		}
+		else
+		{
+			knotVector[0] = knotVector[1] = knotVector[2];
+			knotVector[kn + 2] = knotVector[kn + 3] = knotVector[kn];
+		}
+
+		std::vector<vec3> controlPoints(kn);
+		std::vector<scalar> controlPoints_w(kn);
+		for (int j = 0; j < kn; j += 2)
+		{
+			scalar i1 = knotVector[j + 3] - knotVector[j + 1];
+			scalar i2 = knotVector[j + 4] - knotVector[j + 2];
+
+			controlPoints[j] = throughPoints[j] - i1 * tangents[j] / 3.0;
+			controlPoints_w[j] = 1.0;
+			controlPoints[j + 1] = throughPoints[j + 1] + i2 * tangents[j + 1] / 3.0;
+			controlPoints_w[j + 1] = 1.0;
+		}
+
+		curve.m_degree = 3;
+		curve.m_knots = knotVector;
+		curve.m_control_points = controlPoints;
+		curve.m_weights = controlPoints_w;
+	}
+	inline bool CreateArc(const vec3& center, const vec3& xAxis, const vec3& yAxis, scalar startRad, scalar endRad, scalar xRadius, scalar yRadius, RationalCurve& curve)
+	{
+		scalar theta = endRad - startRad;
+
+		int narcs = 0;
+		if (theta < N_FLOAT_PI / 2.0 || is_almost_equal(theta, N_FLOAT_PI / 2.0))
+		{
+			narcs = 1;
+		}
+		else
+		{
+			if (theta < N_FLOAT_PI || is_almost_equal(theta, N_FLOAT_PI))
+			{
+				narcs = 2;
+			}
+			else if (theta < 3 * N_FLOAT_PI / 2.0 || is_almost_equal(theta, 3 * N_FLOAT_PI / 2.0))
+			{
+				narcs = 3;
+			}
+			else
+			{
+				narcs = 4;
+			}
+		}
+		scalar dtheta = theta / (scalar)narcs;
+		int n = 2 * narcs;
+
+		int degree = 2;
+		std::vector<scalar> knotVector(n + degree + 1 + 1);
+		std::vector<vec3> controlPoints(n + 1);
+		std::vector<scalar>controlPoints_W(n + 1);
+
+		scalar w1 = cos(dtheta / 2.0);
+		vec3 nX = xAxis.normalized();
+		vec3 nY = yAxis.normalized();
+		vec3 P0 = center + xRadius * cos(startRad) * nX + yRadius * sin(startRad) * nY;
+		vec3 T0 = -sin(startRad) * nX + cos(startRad) * nY;
+
+		controlPoints[0] = P0;
+		controlPoints_W[0] = 1.0;
+		int index = 0;
+		scalar angle = startRad;
+		for (int i = 1; i <= narcs; i++)
+		{
+			angle += dtheta;
+			vec3 P2 = center + xRadius * cos(angle) * nX + yRadius * sin(angle) * nY;
+			controlPoints[index + 2] = P2;
+			controlPoints_W[index + 2] = 1;
+			vec3 T2 = -sin(angle) * nX + cos(angle) * nY;
+
+			scalar param0, param2 = 0.0;
+			vec3 P1;
+			CurveCurveIntersectionType type = ComputeRays(P0, T0, P2, T2, param0, param2, P1);
+			if (type != CurveCurveIntersectionType::Intersecting) return false;
+			controlPoints[index + 1] = P1;
+			controlPoints_W[index + 1] = w1;
+			index = index + 2;
+			if (i < narcs)
+			{
+				P0 = P2;
+				T0 = T2;
+			}
+		}
+
+		int j = 2 * narcs + 1;
+
+		for (int i = 0; i < 3; i++)
+		{
+			knotVector[i] = 0.0;
+			knotVector[i + j] = 1.0;
+		}
+
+		switch (narcs)
+		{
+		case 1:
+			break;
+		case 2:
+			knotVector[3] = knotVector[4] = 0.5;
+			break;
+		case 3:
+			knotVector[3] = knotVector[4] = 1.0 / 3;
+			knotVector[5] = knotVector[6] = 2.0 / 3;
+			break;
+		case 4:
+			knotVector[3] = knotVector[4] = 0.25;
+			knotVector[5] = knotVector[6] = 0.5;
+			knotVector[7] = knotVector[8] = 0.75;
+			break;
+		}
+		curve.m_degree = degree;
+		curve.m_knots = knotVector;
+		curve.m_control_points = controlPoints;
+		curve.m_weights = controlPoints_W;
+		return true;
+	}
+	inline void GlobalInterpolation(int degree, const std::vector<vec3>& throughPoints, const std::vector<vec3>& tangents, scalar tangentFactor, RationalCurve& curve)
+	{
+
+		std::vector<vec3> unitTangents(tangents.size());
+		for (int i = 0; i < tangents.size(); i++)
+		{
+			unitTangents[i] = tangents[i].normalized();
+		}
+
+		int size = throughPoints.size();
+		int n = 2 * size;
+
+		std::vector<vec3> controlPoints(n);
+		std::vector<scalar> controlPoints_W(n);
+		std::vector<scalar> knotVector(n + degree + 1);
+
+		scalar d = get_total_chord_length(throughPoints);
+
+		std::vector<scalar> uk = get_chord_parameterization(throughPoints);
+		switch (degree)
+		{
+		case 2:
+		{
+			for (int i = 0; i <= degree; i++)
+			{
+				knotVector[i] = 0.0;
+				knotVector[knotVector.size() - 1 - i] = 1.0;
+			}
+			for (int i = 0; i < size - 1; i++)
+			{
+				knotVector[2 * i + degree] = uk[i];
+				knotVector[2 * i + degree + 1] = (uk[i] + uk[i + 1]) / 2.0;
+			}
+			break;
+		}
+
+		case 3:
+		{
+			for (int i = 0; i <= degree; i++)
+			{
+				knotVector[i] = 0.0;
+				knotVector[knotVector.size() - 1 - i] = 1.0;
+			}
+			for (int i = 1; i < size - 1; i++)
+			{
+				knotVector[degree + 2 * i] = (2 * uk[i] + uk[i + 1]) / 3.0;
+				knotVector[degree + 2 * i + 1] = (uk[i] + 2 * uk[i + 1]) / 3.0;
+			}
+			knotVector[4] = uk[1] / 2.0;
+			knotVector[knotVector.size() - degree - 2] = (uk[size - 1] + 1.0) / 2.0;
+			break;
+		}
+		default:
+		{
+			std::vector<scalar> uk2(2 * size);
+			for (int i = 0; i < size - 1; i++)
+			{
+				uk2[2 * i] = uk[i];
+				uk2[2 * i + 1] = (uk[i] + uk[i + 1]) / 2.0;
+			}
+			uk2[uk2.size() - 2] = (uk2[uk2.size() - 1] + uk2[uk2.size() - 3]) / 2.0;
+
+			knotVector = average_knot_vector(degree, uk2);
+		}
+		}
+		Eigen::Matrix<scalar, -1, -1> A = Eigen::Matrix<scalar, -1, -1>::Zero(n, n);
+
+		for (int i = 1; i < size - 1; i++)
+		{
+
+			int spanIndex = find_span(degree, knotVector, uk[i]);
+
+			auto basis = bspline_basis(degree, spanIndex, knotVector, uk[i]);
+			std::vector<std::vector<scalar>> derBasis = bspline_der_basis(degree, spanIndex, knotVector, uk[i], 1);
+			for (int j = 0; j <= degree; j++)
+			{
+				A(2 * i, spanIndex - degree + j) = basis[j];
+				A(2 * i + 1, spanIndex - degree + j) = derBasis[1][j];
+			}
+		}
+		A(0, 0) = 1.0;
+		A(1, 0) = -1.0;
+		A(1, 1) = 1.0;
+		A(A.rows() - 2, A.cols() - 2) = -1.0;
+		A(A.rows() - 2, A.cols() - 1) = 1.0;
+		A(A.rows() - 1, A.cols() - 1) = 1.0;
+		Eigen::Matrix<scalar, -1, -1> right = Eigen::Matrix<scalar, -1, -1>::Zero(n, 3);
+
+		for (int i = 0; i < size; i++)
+		{
+			for (int j = 0; j < 3; j++)
+			{
+				right(2 * i, j) = throughPoints[i][j];
+				right(2 * i + 1, j) = unitTangents[i][j] * d;
+			}
+		}
+
+		scalar d0 = knotVector[degree + 1] / degree;
+		scalar dn = (1 - knotVector[knotVector.size() - degree - 2]) / degree;
+
+		vec3 dp0 = unitTangents[0];
+		vec3 dpn = unitTangents[unitTangents.size() - 1];
+		vec3 qpn = throughPoints[size - 1];
+		for (int j = 0; j < 3; j++)
+		{
+			right(1, j) = d0 * dp0[j] * d;
+			right(A.rows() - 2, j) = dn * dpn[j] * d;
+			right(A.cols() - 1, j) = qpn[j];
+		}
+
+		Eigen::Matrix<scalar, -1, -1> result = A.lu().solve(right);
+		for (int i = 0; i < result.size(); i++)
+		{
+			vec3 temp = vec3(0, 0, 0);
+			for (int j = 0; j < 3; j++)
+			{
+				temp[j] = result(i, j);
+			}
+			controlPoints[i] = temp;
+			controlPoints_W[i] = 1.0;
+		}
+		curve.m_degree = degree;
+		curve.m_knots = knotVector;
+		curve.m_control_points = controlPoints;
+		curve.m_weights = controlPoints_W;
+	}
+	inline scalar Getak(const vec3& qk_1, const vec3& qk, const vec3& qk1, const vec3& qk2)
+	{
+		return (qk_1.cross(qk)).norm() / ((qk_1.cross(qk).norm()) + (qk1.cross(qk2)).norm());
+	}
+	inline vec3 Getqk(const std::vector<vec3>& throughPoints, int index)
+	{
+		return throughPoints[index] - throughPoints[index - 1];
+	}
+	inline vec3 GetTk(const vec3& qk_1, const vec3& qk, const vec3& qk1, const vec3& qk2)
+	{
+		scalar ak = Getak(qk_1, qk, qk1, qk2);
+		return ((1 - ak) * qk + ak * qk1).normalized();
+	}
+	inline bool ComputeTangent(const std::vector<vec3>& throughPoints, std::vector<vec3>& tangents)
+	{
+		int size = throughPoints.size();
+		if (size < 5) return false;
+		tangents.resize(size);
+		for (int k = 2; k < size - 2; k++)
+		{
+			vec3 qk_1 = Getqk(throughPoints, k - 1);
+			vec3 qk = Getqk(throughPoints, k);
+			vec3 qk1 = Getqk(throughPoints, k + 1);
+			vec3 qk2 = Getqk(throughPoints, k + 2);
+
+			tangents[k] = GetTk(qk_1, qk, qk1, qk2);
+		}
+		int n = size - 1;
+		vec3 q0 = 2 * Getqk(throughPoints, 1) - Getqk(throughPoints, 2);
+		vec3 q_1 = 2 * q0 - Getqk(throughPoints, 1);
+		vec3 qn1 = 2 * Getqk(throughPoints, n) - Getqk(throughPoints, n - 1);
+		vec3 qn2 = 2 * qn1 - Getqk(throughPoints, n);
+		tangents[0] = GetTk(q_1, q0, Getqk(throughPoints, 1), Getqk(throughPoints, 2));
+		tangents[1] = GetTk(q0, Getqk(throughPoints, 1), Getqk(throughPoints, 2), Getqk(throughPoints, 3));
+		tangents[n - 1] = GetTk(Getqk(throughPoints, n - 2), Getqk(throughPoints, n - 1), Getqk(throughPoints, n), qn1);
+		tangents[n] = GetTk(Getqk(throughPoints, n - 1), Getqk(throughPoints, n), qn1, qn2);
+		return true;
+	}
+	inline bool CubicLocalInterpolation(const std::vector<vec3>& throughPoints, RationalCurve& curve)
+	{
+		int degree = 3;
+		std::vector<vec3> tangents;
+		bool hasTangents = ComputeTangent(throughPoints, tangents);
+		if (!hasTangents) return false;
+		int size = throughPoints.size();
+		std::vector<scalar> uk(size);
+		int n = size - 1;
+		uk[0] = 0;
+		std::vector<vec3> tempControlPoints;
+		for (int k = 0; k < n; k++)
+		{
+			vec3 t0 = tangents[k];
+			vec3 t3 = tangents[k + 1];
+			vec3 p0 = throughPoints[k];
+			vec3 p3 = throughPoints[k + 1];
+			scalar a = 16 - (t0 + t3).squaredNorm();
+			scalar b = 12 * (p3 - p0).dot(t0 + t3);
+			scalar c = -36 * (p3 - p0).squaredNorm();
+			scalar alpha = (-b + std::sqrt(b * b - 4 * a * c)) / (2 * a);
+			vec3 pk0 = throughPoints[k];
+			vec3 pk1 = p0 + (1 / 3) * alpha * t0;
+			vec3 pk2 = p3 - (1 / 3) * alpha * t3;
+			uk[k + 1] = uk[k] + 3 * (pk1 - pk0).norm();
+			tempControlPoints.emplace_back(pk1);
+			tempControlPoints.emplace_back(pk2);
+		}
+		int kvSize = 2 * (degree + 1) + 2 * (size - 1);
+		std::vector<scalar> knotVector(kvSize);
+		for (int i = 0; i <= degree; i++)
+		{
+			knotVector[i] = 0;
+			knotVector[kvSize - 1 - i] = 1;
+		}
+
+		for (int i = 1; i <= n - 1; i = i + 2)
+		{
+			knotVector[degree + i] = knotVector[degree + (i + 1)] = uk[i] / uk[n];
+		}
+
+		int tSize = tempControlPoints.size();
+		std::vector<vec3> controlPoints(tSize + 2);
+		std::vector<scalar> controlPoints_W(tSize + 2, 1.0);
+		controlPoints[0] = throughPoints[0];
+		controlPoints[tSize + 2 - 1] = throughPoints[n];
+		for (int i = 0; i < tSize; i++)
+		{
+			controlPoints[i + 1] = tempControlPoints[i];
+		}
+		curve.m_degree = degree;
+		curve.m_knots = knotVector;
+		curve.m_control_points = controlPoints;
+		curve.m_weights = controlPoints_W;
+		return true;
+	}
+	inline void Bending(const RationalCurve& curve, scalar startParameter, scalar endParameter, vec3 bendCenter, scalar radius, scalar crossRatio, RationalCurve& result)
+	{
+		int degree = curve.m_degree;
+		std::vector<scalar> knotVector = curve.m_knots;
+		std::vector<vec3> controlPoints = curve.m_control_points;
+		std::vector<scalar> controlPoints_W = curve.m_weights;
+
+
+		int spanMinIndex = find_span(degree, knotVector, startParameter);
+		int spanMaxIndex = find_span(degree, knotVector, endParameter);
+
+		std::vector<vec3> updatedControlPoints = controlPoints;
+		std::vector<scalar> updatedControlPoints_W = controlPoints_W;
+
+		std::map<int, vec3> selectedControlPoints;
+		for (int i = spanMinIndex; i <= spanMaxIndex - degree - 1; i++)
+		{
+			vec3 p = updatedControlPoints[i] / updatedControlPoints_W[i];
+			selectedControlPoints.insert({ i, p });
+		}
+
+		for (auto it = selectedControlPoints.begin(); it != selectedControlPoints.end(); ++it)
+		{
+			int index = it->first;
+			vec3 current = it->second;
+			vec3 pointOnBendCurve = bendCenter + (current - bendCenter).normalized() * radius;
+			scalar si = (bendCenter - pointOnBendCurve).norm() / (bendCenter - current).norm();
+			scalar ti = (crossRatio * si) / (1 + (crossRatio - 1) * si);
+			vec3 project = bendCenter + (current - bendCenter) * ti;
+			updatedControlPoints[index] = project;
+		}
+
+		result.m_degree = degree;
+		result.m_knots = knotVector;
+		result.m_control_points = updatedControlPoints;
+		result.m_weights = updatedControlPoints_W;
+	}
+
+}//

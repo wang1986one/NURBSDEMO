@@ -139,9 +139,9 @@ namespace Geomerty {
 			Eigen::MatrixXd TV;
 			Eigen::MatrixXi TE;
 			Eigen::MatrixXd TC;
-			TV.resize(pos_arr.size(), 3);
-			TE.resize(pos_arr.size() - 1, 2);
-			TC.resize(pos_arr.size() - 1, 3);
+			TV.resize(pos_arr.size()+ crv->m_control_points.size(), 3);
+			TE.resize(pos_arr.size() + crv->m_control_points.size() - 2, 2);
+			TC.resize(pos_arr.size() + crv->m_control_points.size() - 2, 3);
 			for (int i = 0; i < pos_arr.size(); i++) {
 				TV.row(i) << pos_arr[i][0], pos_arr[i][1], pos_arr[i][2];
 				if (i > 0) {
@@ -153,7 +153,13 @@ namespace Geomerty {
 			TTV.resize(crv->m_control_points.size(), 3);
 			for (int i = 0; i < crv->m_control_points.size(); i++) {
 				TTV.row(i) << crv->m_control_points[i][0], crv->m_control_points[i][1], crv->m_control_points[i][2];
+				TV.row(i+ pos_arr.size()) << crv->m_control_points[i][0], crv->m_control_points[i][1], crv->m_control_points[i][2];
+				if (i > 0) {
+					TE.row(pos_arr.size()+i - 2) << i - 1+ pos_arr.size(), i+ pos_arr.size();
+					TC.row(pos_arr.size()+i - 2) << 0, 1, 1;
+				}
 			}
+			
 			Eigen::MatrixXd cc;
 			cc.resize(1, 3);
 			cc.row(0) << 0, 1, 1;

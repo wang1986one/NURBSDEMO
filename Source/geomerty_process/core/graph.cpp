@@ -12,6 +12,8 @@
 #include "nodes/nurbssurface_create_node.h"
 #include "nodes/nurbssurface_loadnode.h"
 #include "nodes/nurbscurve_bendnode.h"
+#include "nodes/nurbscurve_splitnode.h"
+#include "nodes/nurbssurface_splitnode.h"
 
 void DrawIcon(ImDrawList* drawList, const ImVec2& a, const ImVec2& b, bool filled, ImU32 color, ImU32 innerColor)
 {
@@ -453,6 +455,10 @@ namespace Geomerty {
 				node = SpawnNurbsSurface_LoadNode();
 			if (ImGui::MenuItem("BendCurve_LoadNode"))
 				node = SpawnBendCurve_LoadNode();
+			if (ImGui::MenuItem("Curve_SplitNode"))
+				node = Curve_SplitNode();
+			if (ImGui::MenuItem("Surface_SplitNode"))
+				node = Surface_SplitNode();
 
 			if (node)
 			{
@@ -640,6 +646,18 @@ namespace Geomerty {
 	Geomerty::Node* Graph::SpawnBendCurve_LoadNode()
 	{
 		m_Nodes.push_back(new Geomerty::NurbsCurve_BendNode(Geomerty::GetNextId(), "NurbsCurve_BendNode"));
+		m_Nodes.back()->Init(this);
+		return m_Nodes.back();
+	}
+	Geomerty::Node* Graph::Curve_SplitNode()
+	{
+		m_Nodes.push_back(new Geomerty::NurbsCurve_SplitNode(Geomerty::GetNextId(), "NurbsCurve_SlitNode"));
+		m_Nodes.back()->Init(this);
+		return m_Nodes.back();
+	}
+	Geomerty::Node* Graph::Surface_SplitNode()
+	{
+		m_Nodes.push_back(new Geomerty::NurbsSurface_SplitNode(Geomerty::GetNextId(), "NurbsSurface_SlitNode"));
 		m_Nodes.back()->Init(this);
 		return m_Nodes.back();
 	}

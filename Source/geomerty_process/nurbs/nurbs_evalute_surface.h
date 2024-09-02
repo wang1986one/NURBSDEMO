@@ -1,5 +1,4 @@
 #pragma once
-
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include<tuple>
@@ -52,7 +51,6 @@ namespace Geomerty
 					return false;
 				return surface_is_valid(srf.m_degree_u, srf.m_degree_v, srf.m_knots_u, srf.m_knots_v, srf.m_control_points);
 			}
-
 			/**
 			 * Evaluate parameterization for throughpoints on a surfacemesh
 			 * @param[in] throughpoints points on a surfacemesh.
@@ -918,6 +916,20 @@ namespace Geomerty
 			inline std::tuple<std::vector<vec3>, std::vector<size_t>> sample_nurbs_surface(const RationalSurface& srf, int segments)
 			{
 				// Sample the NURBS to get triangles
+				scalar u_min = std::numeric_limits<float>::max();
+				scalar u_max = -std::numeric_limits<float>::max();
+				scalar v_min = std::numeric_limits<float>::max();
+				scalar v_max = -std::numeric_limits<float>::max();;
+				for (auto u_temp : srf.m_knots_u)
+				{
+					u_min = std::min(u_min, u_temp);
+					u_max = std::max(u_max, u_temp);
+				}
+				for (auto v_temp : srf.m_knots_v)
+				{
+					v_min = std::min(v_min, v_temp);
+					v_max = std::max(v_max, v_temp);
+				}
 				std::vector<vec3> point_arr((segments + 1) * (segments + 1));
 				std::vector<size_t> index_arr(segments * segments * 6);
 				const float seg = 1.0f / segments;
@@ -927,7 +939,9 @@ namespace Geomerty
 					{
 						const float u = ix * seg;
 						const float v = iy * seg;
-						point_arr[ix + iy * (segments + 1)] = surface_point(srf, u, v);
+						const scalar norm_u = u_min + (u_max - u_min) * u;
+						const scalar norm_v = v_min + (v_max - v_min) * v;
+						point_arr[ix + iy * (segments + 1)] = surface_point(srf, norm_u, norm_v);
 					}
 				}
 
@@ -994,7 +1008,6 @@ namespace Geomerty
 				}
 				return box;
 			}
-		}// namespace util
-
-	}// namespace nurbs
-}// namespace nous
+		}
+	}
+}

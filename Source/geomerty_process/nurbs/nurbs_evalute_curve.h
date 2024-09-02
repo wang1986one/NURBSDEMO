@@ -890,15 +890,11 @@ namespace Geomerty::nurbs::util
 	};
 	inline CurveCurveIntersectionType ComputeRays(const vec3& point0, const vec3& vector0, const vec3& point1, const vec3& vector1, scalar& param0, scalar& param1, vec3& intersectPoint)
 	{
-
-
 		vec3 v0 = const_cast<vec3&>(vector0);
 		vec3 v1 = const_cast<vec3&>(vector1);
-
 		vec3 cross = v0.cross(v1);
 		vec3 diff = point1 - point0;
 		vec3 coinCross = diff.cross(v1);
-
 		if (cross.isApprox(vec3::Zero()))
 		{
 			if (coinCross.isApprox(vec3::Zero()))

@@ -190,6 +190,101 @@ namespace Geomerty::nurbs::util
 		crv.m_weights = weights;
 		return crv;
 	}
+	inline bool create_arc(const vec3& center, const vec3& xAxis, const vec3& yAxis, scalar startRad, scalar endRad, scalar xRadius, scalar yRadius, RationalCurve& curve)
+	{
+		scalar theta = endRad - startRad;
+
+		int narcs = 0;
+		if (theta < N_FLOAT_PI / 2.0 || is_almost_equal(theta, N_FLOAT_PI / 2.0))
+		{
+			narcs = 1;
+		}
+		else
+		{
+			if (theta < N_FLOAT_PI || is_almost_equal(theta, N_FLOAT_PI))
+			{
+				narcs = 2;
+			}
+			else if (theta < 3 * N_FLOAT_PI / 2.0 || is_almost_equal(theta, 3 * N_FLOAT_PI / 2.0))
+			{
+				narcs = 3;
+			}
+			else
+			{
+				narcs = 4;
+			}
+		}
+		scalar dtheta = theta / (scalar)narcs;
+		int n = 2 * narcs;
+
+		int degree = 2;
+		std::vector<scalar> knotVector(n + degree + 1 + 1);
+		std::vector<vec3> controlPoints(n + 1);
+		std::vector<scalar>controlPoints_W(n + 1);
+
+		scalar w1 = cos(dtheta / 2.0);
+		vec3 nX = xAxis.normalized();
+		vec3 nY = yAxis.normalized();
+		vec3 P0 = center + xRadius * cos(startRad) * nX + yRadius * sin(startRad) * nY;
+		vec3 T0 = -sin(startRad) * nX + cos(startRad) * nY;
+
+		controlPoints[0] = P0;
+		controlPoints_W[0] = 1.0;
+		int index = 0;
+		scalar angle = startRad;
+		for (int i = 1; i <= narcs; i++)
+		{
+			angle += dtheta;
+			vec3 P2 = center + xRadius * cos(angle) * nX + yRadius * sin(angle) * nY;
+			controlPoints[index + 2] = P2;
+			controlPoints_W[index + 2] = 1;
+			vec3 T2 = -sin(angle) * nX + cos(angle) * nY;
+
+			scalar param0, param2 = 0.0;
+			vec3 P1;
+			CurveCurveIntersectionType type = ComputeRays(P0, T0, P2, T2, param0, param2, P1);
+			if (type != CurveCurveIntersectionType::Intersecting) return false;
+			controlPoints[index + 1] = P1;
+			controlPoints_W[index + 1] = w1;
+			index = index + 2;
+			if (i < narcs)
+			{
+				P0 = P2;
+				T0 = T2;
+			}
+		}
+
+		int j = 2 * narcs + 1;
+
+		for (int i = 0; i < 3; i++)
+		{
+			knotVector[i] = 0.0;
+			knotVector[i + j] = 1.0;
+		}
+
+		switch (narcs)
+		{
+		case 1:
+			break;
+		case 2:
+			knotVector[3] = knotVector[4] = 0.5;
+			break;
+		case 3:
+			knotVector[3] = knotVector[4] = 1.0 / 3;
+			knotVector[5] = knotVector[6] = 2.0 / 3;
+			break;
+		case 4:
+			knotVector[3] = knotVector[4] = 0.25;
+			knotVector[5] = knotVector[6] = 0.5;
+			knotVector[7] = knotVector[8] = 0.75;
+			break;
+		}
+		curve.m_degree = degree;
+		curve.m_knots = knotVector;
+		curve.m_control_points = controlPoints;
+		curve.m_weights = controlPoints_W;
+		return true;
+	}
 	inline void translational_sweep_surface(const RationalCurve& profile, const RationalCurve& rail, RationalSurface& srf)
 	{
 		int n = profile.m_control_points.size() - 1;
@@ -321,5 +416,47 @@ namespace Geomerty::nurbs::util
 		srf.m_control_points = control_points;
 		srf.m_weights = control_points_weight;
 	}
+	//++++
+	bool CreateCylindricalSurface(const vec3& origin, const vec3& xAxis, const vec3& yAxis, double startRad, double endRad, double radius, double height, RationalSurface& surface)
+	{
+
+
+		vec3 nX = xAxis.normalized();
+		vec3 nY = yAxis.normalized();
+
+		RationalCurve arc;
+		bool isCreated = create_arc(origin, nX, nY, startRad, endRad, radius, radius, arc);
+		if (!isCreated) return false;
+
+		vec3 axis = nX.cross(nY);
+		vec3 translation = height * axis;
+		vec3 halfTranslation = 0.5 * height * axis;
+
+		int size = arc.m_control_points.size();
+		std::vector<std::vector<vec3>> controlPoints(3, std::vector<vec3>(size));
+		std::vector<std::vector<float>> controlPoints_W(3, std::vector<scalar>(size));
+
+
+		for (int i = 0; i < size; i++)
+		{
+			vec3 car_pos = arc.m_control_points[i] / arc.m_weights[i];
+			controlPoints_W[2][i] = arc.m_weights[i];
+			controlPoints_W[1][i] = arc.m_weights[i];
+			controlPoints_W[0][i] = arc.m_weights[i];
+			controlPoints[2][i] = car_pos;
+			controlPoints[1][i] = halfTranslation + car_pos;
+			controlPoints[0][i] = translation + car_pos;
+		}
+
+		surface.m_degree_u = 2;
+		surface.m_degree_v = 2;
+		surface.m_knots_u = { 0,0,0,1,1,1 };
+		surface.m_knots_v = arc.m_knots;
+		surface.m_control_points = controlPoints;
+		surface.m_weight = controlPoints_W;
+
+		return true;
+	}
+
 
 }// namespace nous::nurbs::util

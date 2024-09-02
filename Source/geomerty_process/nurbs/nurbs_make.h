@@ -417,7 +417,7 @@ namespace Geomerty::nurbs::util
 		srf.m_weights = control_points_weight;
 	}
 	//++++
-	bool CreateCylindricalSurface(const vec3& origin, const vec3& xAxis, const vec3& yAxis, double startRad, double endRad, double radius, double height, RationalSurface& surface)
+	bool cylindrical_surface(const vec3& origin, const vec3& xAxis, const vec3& yAxis, scalar startRad, scalar endRad, scalar radius, scalar height, RationalSurface& surface)
 	{
 
 
@@ -453,10 +453,43 @@ namespace Geomerty::nurbs::util
 		surface.m_knots_u = { 0,0,0,1,1,1 };
 		surface.m_knots_v = arc.m_knots;
 		surface.m_control_points = controlPoints;
-		surface.m_weight = controlPoints_W;
-
+		surface.m_weights = controlPoints_W;
 		return true;
 	}
+	void bilinear_surface(const vec3& topLeftPoint, const vec3& topRightPoint, const vec3& bottomLeftPoint, const vec3& bottomRightPoint, RationalSurface& surface)
+	{
+		int degree = 3;
+		surface.m_degree_u = surface.m_degree_v = degree;
 
+		std::vector<scalar> knotVectorU;
+		std::vector<scalar> knotVectorV;
+		std::vector<std::vector<vec3>> controlPoints;
+		std::vector<std::vector<scalar>> controlPoints_w(degree + 1, std::vector<scalar>(degree + 1, 1.0));
+
+		for (int i = 0; i <= degree; i++)
+		{
+			std::vector<vec3> row;
+			scalar l = 1.0 - i / (scalar)degree;
+			for (int j = 0; j <= degree; j++)
+			{
+				vec3 d1 = l * topLeftPoint + (1 - l) * bottomLeftPoint;
+				vec3 d2 = l * topRightPoint + (1 - l) * bottomRightPoint;
+
+				vec3 res = d1 * (1 - j / (scalar)degree) + (j / (scalar)degree) * d2;
+				row.emplace_back(res);
+			}
+			controlPoints.emplace_back(row);
+
+			knotVectorU.insert(knotVectorU.begin(), 0.0);
+			knotVectorU.emplace_back(1.0);
+
+			knotVectorV.insert(knotVectorV.begin(), 0.0);
+			knotVectorV.emplace_back(1.0);
+		}
+		surface.m_knots_u = knotVectorU;
+		surface.m_knots_v = knotVectorV;
+		surface.m_control_points = controlPoints;
+		surface.m_weights = controlPoints_w;
+	}
 
 }// namespace nous::nurbs::util
